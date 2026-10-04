@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rollsync_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: rollsync
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: rollsync_mqtt
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./deploy/mosquitto/config:/mosquitto/config
+      - ./deploy/mosquitto/data:/mosquitto/data
+      - ./deploy/mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

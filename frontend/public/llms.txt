@@ -1,0 +1,18 @@
+# RollSync
+
+RollSync is a complete smart college ERP platform with AI-powered attendance, timetable management, and seamless communication.
+
+## Key Features
+- Smart Attendance: Dual-verification using BLE and RFID for automated, accurate roll calls.
+- Real-time Timetables: Dynamic class scheduling with instant notifications for room changes and substitutions.
+- Advanced Analytics: Comprehensive dashboards providing actionable insights for admins, teachers, and students.
+- Cloud-Based Architecture: Secure, high-performance platform accessible from anywhere.
+
+## Modules
+- Admin Dashboard
+- Teacher Portal
+- Student Portal
+
+## Contact & Links
+- Website: https://rollsync.example.com
+- Sign In: https://rollsync.example.com/login
