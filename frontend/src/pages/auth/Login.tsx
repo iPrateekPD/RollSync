@@ -34,8 +34,8 @@ export const Login = () => {
           id: 'mock-teacher-1',
           email: 'teacher@rollsync.com',
           role: 'TEACHER' as const,
-          firstName: 'Reema',
-          lastName: 'Angelin'
+          firstName: 'Dr. Jitendra',
+          lastName: 'Kumar'
         };
         login('mock-access-token', 'mock-refresh-token', mockUser);
         navigate('/teacher', { replace: true });

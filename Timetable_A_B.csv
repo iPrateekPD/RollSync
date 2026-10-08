@@ -1,0 +1,61 @@
+day,start_time,end_time,subject_code,subject_name,teacher_name,section,room,class_type,is_lab
+MON,08:00,09:00,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-A,RDB-05,lecture,False
+MON,09:00,10:00,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-A,RDB-05,lecture,False
+MON,10:20,11:20,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-A,RDB-05,lecture,False
+MON,11:20,12:20,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-A,RDB-05,lecture,False
+MON,12:20,13:20,PROJECT,Project,,ECE-A,RDB-05,project,False
+TUE,08:00,10:00,VLSI LAB,Digital VLSI Design Laboratory,Dr. Jitendra Kumar,ECE-A,RDB-05,lab,True
+TUE,08:00,10:00,DSP LAB,Digital Signal Processing Laboratory,Dr. Priyadarshan Parida,ECE-A,RDB-05,lab,True
+TUE,10:20,11:20,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-A,RDB-05,lecture,False
+TUE,11:20,12:20,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-A,RDB-05,lecture,False
+TUE,12:20,13:20,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-A,RDB-05,lecture,False
+WED,08:00,09:00,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-A,RDB-05,lecture,False
+WED,09:00,10:00,OB,Organizational Behaviour,Mrs. Swapna Mayee Sahoo,ECE-A,RDB-05,lecture,False
+WED,10:20,11:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-A,RDB-05,lecture,False
+WED,11:20,12:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-A,RDB-05,lecture,False
+WED,12:20,13:20,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-A,RDB-05,lecture,False
+THU,08:00,09:00,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-A,RDB-05,lecture,False
+THU,09:00,10:00,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-A,RDB-05,lecture,False
+THU,10:20,11:20,OB,Organizational Behaviour,Mrs. Swapna Mayee Sahoo,ECE-A,RDB-05,lecture,False
+THU,11:20,13:20,MC LAB,Microcontrollers Laboratory,Dr. Manoj Kumar Panda,ECE-A,RDB-05,lab,True
+THU,11:20,13:20,VLSI LAB,Digital VLSI Design Laboratory,Dr. Jitendra Kumar,ECE-A,RDB-05,lab,True
+FRI,08:00,09:00,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-A,RDB-05,lecture,False
+FRI,09:00,10:00,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-A,RDB-05,lecture,False
+FRI,10:20,11:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-A,RDB-05,lecture,False
+FRI,11:20,12:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-A,RDB-05,lecture,False
+FRI,12:20,13:20,PROJECT,Project,,ECE-A,RDB-05,project,False
+SAT,08:00,09:00,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-A,RDB-05,lecture,False
+SAT,09:00,10:00,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-A,RDB-05,lecture,False
+SAT,10:20,11:20,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-A,RDB-05,lecture,False
+SAT,11:20,13:20,DSP LAB,Digital Signal Processing Laboratory,Dr. Priyadarshan Parida,ECE-A,RDB-05,lab,True
+SAT,11:20,13:20,MC LAB,Microcontrollers Laboratory,Dr. Manoj Kumar Panda,ECE-A,RDB-05,lab,True
+MON,08:00,09:00,OB,Organizational Behaviour,Dr. Swapna Mayee Sahoo,ECE-B,RDB-06,lecture,False
+MON,09:00,10:00,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-B,RDB-06,lecture,False
+MON,10:20,11:20,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-B,RDB-06,lecture,False
+MON,11:20,12:20,VLSI LAB,Digital VLSI Design Laboratory,Dr. Jitendra Kumar,ECE-B,RDB-06,lab,True
+MON,11:20,12:20,DSP LAB,Digital Signal Processing Laboratory,Dr. Ranjita Rout,ECE-B,RDB-06,lab,True
+TUE,08:00,09:00,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-B,RDB-06,lecture,False
+TUE,09:00,10:00,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-B,RDB-06,lecture,False
+TUE,10:20,11:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-B,RDB-06,lecture,False
+TUE,11:20,12:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-B,RDB-06,lecture,False
+TUE,12:20,13:20,PROJECT,Project,,ECE-B,RDB-06,project,False
+WED,08:00,10:00,MC LAB,Microcontrollers Laboratory,Dr. Radhanath Patra,ECE-B,RDB-06,lab,True
+WED,08:00,10:00,VLSI LAB,Digital VLSI Design Laboratory,Dr. Jitendra Kumar,ECE-B,RDB-06,lab,True
+WED,10:20,11:20,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-B,RDB-06,lecture,False
+WED,11:20,12:20,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-B,RDB-06,lecture,False
+WED,12:20,13:20,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-B,RDB-06,lecture,False
+THU,08:00,09:00,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-B,RDB-06,lecture,False
+THU,09:00,10:00,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-B,RDB-06,lecture,False
+THU,10:20,11:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-B,RDB-06,lecture,False
+THU,11:20,12:20,FOC,Fiber Optic Communications,Dr. Bandana Mallick,ECE-B,RDB-06,lecture,False
+THU,12:20,13:20,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-B,RDB-06,lecture,False
+FRI,08:00,10:00,DSP LAB,Digital Signal Processing Laboratory,Dr. Ranjita Rout,ECE-B,RDB-06,lab,True
+FRI,08:00,10:00,MC LAB,Microcontrollers Laboratory,Dr. Radhanath Patra,ECE-B,RDB-06,lab,True
+FRI,10:20,11:20,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-B,RDB-06,lecture,False
+FRI,11:20,12:20,DSP,Digital Signal Processing,Dr. Biphu Prasad,ECE-B,RDB-06,lecture,False
+FRI,12:20,13:20,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-B,RDB-06,lecture,False
+SAT,08:00,09:00,EMW,Electromagnetic Waves,Dr. Saran Srihari Sripada Panda,ECE-B,RDB-06,lecture,False
+SAT,09:00,10:00,OB,Organizational Behaviour,Mrs. Swapna Mayee Sahoo,ECE-B,RDB-06,lecture,False
+SAT,10:20,11:20,VLSI,Digital VLSI Design,Dr. Jitendra Kumar,ECE-B,RDB-06,lecture,False
+SAT,11:20,12:20,MCA,Microcontrollers and Applications,Dr. Ami Kumar Parida,ECE-B,RDB-06,lecture,False
+SAT,12:20,13:20,PROJECT,Project,,ECE-B,RDB-06,project,False
