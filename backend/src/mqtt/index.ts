@@ -1,7 +1,5 @@
 import mqtt from 'mqtt';
-import { AttendanceService } from '../modules/attendance/attendance.service';
-import { prisma } from '../config/prisma';
-import { DeviceStatus } from '@prisma/client';
+
 
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
 

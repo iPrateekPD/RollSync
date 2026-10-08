@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { Role } from '@prisma/client';
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key-replace-in-production';
 const JWT_EXPIRES_IN = '1d';
@@ -8,7 +8,7 @@ const REFRESH_EXPIRES_IN = '7d';
 
 export interface TokenPayload {
   userId: string;
-  role: Role;
+  role: string;
 }
 
 export const generateTokens = (payload: TokenPayload) => {
