@@ -1,164 +1,212 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronDown, ArrowRight, UserCheck, UserX, UserMinus, Users } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, ChevronRight, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { fetchStudentsFromDB } from '../../api/supabase';
 
+const TODAYS_CLASSES = [
+  {
+    id: 'class-1',
+    time: '08:00 AM – 09:00 AM',
+    subject: 'Microcontrollers and Applications',
+    code: 'MCA',
+    section: 'SEC A',
+    room: 'RDB-05',
+    status: 'CONFIRMED',
+    present: 48,
+    absent: 2
+  },
+  {
+    id: 'class-2',
+    time: '10:20 AM – 12:20 PM',
+    subject: 'Digital Signal Processing',
+    code: 'DSP',
+    section: 'SEC B',
+    room: 'RDB-06',
+    status: 'REVIEW',
+    present: 42,
+    absent: 8,
+    exceptions: 2,
+    continuous: true
+  }
+];
+
 export const TeacherDashboard = () => {
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [selectedClass, setSelectedClass] = useState('ECE A');
+  const navigate = useNavigate();
+  const [selectedSection, setSelectedSection] = useState('SEC A');
+  const [students, setStudents] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const fetchRecent = async () => {
-      const { data } = await fetchStudentsFromDB(4);
-      if (data) setRecentActivity(data);
+    const loadStudents = async () => {
+      const { data } = await fetchStudentsFromDB();
+      if (data) setStudents(data);
     };
-    fetchRecent();
+    loadStudents();
   }, []);
 
-  return (
-    <div className="space-y-[48px] animate-in fade-in duration-500">
-      
-      {/* Dashboard Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-[32px] font-semibold text-[#111827] tracking-tight">Good morning, Reema Angelin</h1>
-          <div className="flex items-center gap-2 mt-2 text-[15px] text-[#667085]">
-            <span>Teacher</span>
-            <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
-            <span>Class {selectedClass}</span>
+  const filteredStudents = students.filter(s => {
+    const matchesSection = s.section === selectedSection;
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          s.roll_number.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSection && matchesSearch;
+  });
+
+  const getAttendancePercent = (roll: string) => {
+    const num = parseInt(roll.replace(/[^0-9]/g, '') || '0');
+    return (75 + (num % 25)).toFixed(1);
+  };
+
+  const getStatusDisplay = (cls: any) => {
+    switch (cls.status) {
+      case 'UPCOMING':
+        return (
+          <div className="flex items-center gap-2 mt-4 text-[13px] font-medium text-[#667085]">
+            <Clock className="w-4 h-4" /> UPCOMING
           </div>
+        );
+      case 'LIVE':
+        return (
+          <div className="flex items-center gap-2 mt-4 text-[13px] font-medium text-[#EF4444] animate-pulse">
+            <div className="w-2 h-2 rounded-full bg-[#EF4444]" /> LIVE
+          </div>
+        );
+      case 'REVIEW':
+        return (
+          <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
+            <div className="flex items-center justify-between text-[13px] mb-3">
+              <span className="text-[#065F46] font-medium">{cls.present} Present</span>
+              <span className="text-[#991B1B] font-medium">{cls.absent} Absent</span>
+            </div>
+            <button 
+              onClick={() => navigate('/teacher/attendance')}
+              className="w-full flex items-center justify-center gap-2 h-10 bg-[#0B65FE] text-white rounded-[8px] text-[13px] font-medium hover:bg-[#004BCC] transition-colors"
+            >
+              REVIEW ATTENDANCE <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      case 'CONFIRMED':
+        return (
+          <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
+            <div className="flex items-center justify-between text-[13px] mb-3">
+              <span className="text-[#065F46] font-medium">{cls.present} Present</span>
+              <span className="text-[#991B1B] font-medium">{cls.absent} Absent</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 h-10 text-[13px] font-medium text-[#10B981]">
+              <CheckCircle2 className="w-4 h-4" /> CONFIRMED
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-10 animate-in fade-in duration-500 max-w-5xl mx-auto">
+      
+      {/* Header */}
+      <div>
+        <h1 className="text-[32px] font-semibold text-[#111827] tracking-tight">Today's Classes</h1>
+        <p className="mt-2 text-[15px] text-[#667085]">Thursday, 8 October 2026</p>
+      </div>
+
+      {/* Classes Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {TODAYS_CLASSES.map((cls) => (
+          <div key={cls.id} className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-sm flex flex-col">
+            <div className="text-[13px] font-medium text-[#0B65FE] mb-2">{cls.time}</div>
+            <h2 className="text-[18px] font-semibold text-[#111827] leading-tight mb-1">{cls.subject}</h2>
+            
+            {cls.continuous && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[11px] font-medium text-[#667085] mb-3 self-start">
+                <Clock className="w-3 h-3" /> Continuous Class
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2 text-[13px] text-[#667085] mt-auto">
+              <span className="font-medium text-[#111827]">{cls.section}</span>
+              <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
+              <span>{cls.room}</span>
+            </div>
+
+            {getStatusDisplay(cls)}
+          </div>
+        ))}
+      </div>
+
+      {/* Students Section */}
+      <div className="pt-6 border-t border-[#E5E7EB]">
+        <h2 className="text-[20px] font-semibold text-[#111827] mb-6">Students</h2>
+        
+        {/* Section Switcher */}
+        <div className="flex items-center gap-2 p-1 bg-[#F3F4F6] rounded-[10px] w-fit mb-6">
+          {['SEC A', 'SEC B'].map(sec => (
+            <button
+              key={sec}
+              onClick={() => setSelectedSection(sec)}
+              className={`px-6 py-2 rounded-[8px] text-[14px] font-medium transition-all ${
+                selectedSection === sec 
+                  ? 'bg-white text-[#111827] shadow-sm' 
+                  : 'text-[#667085] hover:text-[#111827]'
+              }`}
+            >
+              {sec}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-[14px] font-medium text-[#111827]">Thursday, 28 Aug 2025</div>
-            <div className="text-[13px] text-[#667085]">9:02 AM</div>
+        {/* Search & List */}
+        <div className="bg-white rounded-[16px] border border-[#E5E7EB] shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-[#E5E7EB]">
+            <div className="relative">
+              <Search className="w-5 h-5 text-[#667085] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search student or roll number..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-10 pl-10 pr-4 bg-transparent border-none text-[14px] text-[#111827] placeholder:text-[#667085] focus:outline-none focus:ring-0"
+              />
+            </div>
           </div>
-          <div className="h-10 w-[1px] bg-[#E5E7EB]"></div>
-          <div className="relative">
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="appearance-none flex items-center gap-2 h-10 pl-4 pr-10 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#FFFFFF] transition-colors focus:outline-none focus:ring-2 focus:ring-[#0B65FE]"
-            >
-              <option value="ECE A">ECE A</option>
-              <option value="ECE B">ECE B</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-[#667085] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          
+          <div className="divide-y divide-[#E5E7EB]">
+            {filteredStudents.length === 0 ? (
+              <div className="p-8 text-center text-[#667085] text-[14px]">No students found for {selectedSection}.</div>
+            ) : (
+              filteredStudents.map(student => {
+                const nameParts = student.name.split(' ');
+                const initials = nameParts.length > 1 
+                  ? `${nameParts[0][0]}${nameParts[1][0]}`
+                  : student.name.substring(0, 2).toUpperCase();
+                  
+                return (
+                  <div key={student.id} className="p-4 flex items-center justify-between hover:bg-[#F9FAFB] transition-colors cursor-pointer group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-[10px] bg-[#E5E7EB] flex items-center justify-center text-[14px] font-medium text-[#111827]">
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="text-[14px] font-semibold text-[#111827]">{student.name}</div>
+                        <div className="text-[13px] text-[#667085] mt-0.5 font-mono">{student.roll_number}</div>
+                      </div>
+                    </div>
+                    <div className="text-right flex items-center gap-4">
+                      <div>
+                        <div className="text-[14px] font-semibold text-[#111827]">{getAttendancePercent(student.roll_number)}%</div>
+                        <div className="text-[11px] text-[#667085] uppercase tracking-wide">Attendance</div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-[#D1D5DB] group-hover:text-[#0B65FE] transition-colors" />
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
 
-      {/* Attendance Summary */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[20px] font-semibold text-[#111827]">Today's Attendance</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Total Students */}
-          <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-subtle flex flex-col justify-between h-[140px]">
-            <div className="flex items-center gap-2 text-[#667085]">
-              <Users className="w-4 h-4" />
-              <span className="text-[14px] font-medium">Total Students</span>
-            </div>
-            <div className="text-[40px] font-semibold text-[#111827] tracking-tight">55</div>
-          </div>
-
-          {/* Present */}
-          <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-subtle flex flex-col justify-between h-[140px]">
-            <div className="flex items-center gap-2 text-[#667085]">
-              <UserCheck className="w-4 h-4 text-[#10B981]" />
-              <span className="text-[14px] font-medium">Present</span>
-            </div>
-            <div className="text-[40px] font-semibold text-[#111827] tracking-tight">50</div>
-          </div>
-
-          {/* Absent */}
-          <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-subtle flex flex-col justify-between h-[140px]">
-            <div className="flex items-center gap-2 text-[#667085]">
-              <UserX className="w-4 h-4 text-[#EF4444]" />
-              <span className="text-[14px] font-medium">Absent</span>
-            </div>
-            <div className="text-[40px] font-semibold text-[#111827] tracking-tight">2</div>
-          </div>
-
-          {/* On Leave */}
-          <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-subtle flex flex-col justify-between h-[140px]">
-            <div className="flex items-center gap-2 text-[#667085]">
-              <UserMinus className="w-4 h-4 text-[#F59E0B]" />
-              <span className="text-[14px] font-medium">On Leave</span>
-            </div>
-            <div className="text-[40px] font-semibold text-[#111827] tracking-tight">3</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Action Area */}
-      <section className="bg-white rounded-[20px] p-8 border border-[#E5E7EB] shadow-subtle flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div>
-          <h2 className="text-[20px] font-semibold text-[#111827]">Ready to begin class?</h2>
-          <p className="mt-2 text-[15px] text-[#667085]">Start scanning RFID cards or mark attendance manually.</p>
-        </div>
-        <Link 
-          to="/teacher/attendance" 
-          className="inline-flex items-center justify-center gap-2 h-12 px-8 bg-[#0B65FE] hover:bg-[#004BCC] text-white rounded-[12px] font-medium text-[15px] transition-colors shrink-0"
-        >
-          Take Attendance
-          <ArrowRight className="w-5 h-5" />
-        </Link>
-      </section>
-
-      {/* Recent Activity */}
-      <section className="space-y-6">
-        <h2 className="text-[20px] font-semibold text-[#111827]">Recent Activity</h2>
-        <div className="bg-white rounded-[16px] border border-[#E5E7EB] shadow-subtle overflow-hidden">
-          <div className="divide-y divide-[#E5E7EB]">
-            {recentActivity.map((student, i) => {
-              const statuses = ['Present', 'Present', 'Absent', 'Present'];
-              const colors = ['bg-[#D1FAE5] text-[#065F46]', 'bg-[#D1FAE5] text-[#065F46]', 'bg-[#FEE2E2] text-[#991B1B]', 'bg-[#D1FAE5] text-[#065F46]'];
-              const times = ['9:02 AM', '9:01 AM', '8:58 AM', '8:57 AM'];
-              
-              const status = statuses[i % 4];
-              const color = colors[i % 4];
-              const time = times[i % 4];
-              
-              // Get initials from first and last name (or second word)
-              const nameParts = student.name.split(' ');
-              const initials = nameParts.length > 1 
-                ? `${nameParts[0][0]}${nameParts[1][0]}`
-                : student.name.substring(0, 2).toUpperCase();
-
-              return (
-                <div key={student.id} className="p-4 flex items-center justify-between hover:bg-[#FFFFFF] transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[14px] font-medium text-[#111827]">
-                      {initials}
-                    </div>
-                    <div>
-                      <div className="text-[15px] font-medium text-[#111827]">{student.name}</div>
-                      <div className="text-[13px] text-[#667085]">Roll No. {student.roll_number}</div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium ${color}`}>
-                      {status}
-                    </span>
-                    <span className="text-[12px] text-[#667085]">{time}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="p-4 border-t border-[#E5E7EB] bg-[#F9FAFB] text-center">
-            <Link to="/teacher/reports" className="text-[14px] font-medium text-[#0B65FE] hover:text-[#004BCC] transition-colors">
-              View full activity
-            </Link>
-          </div>
-        </div>
-      </section>
-      
     </div>
   );
 };

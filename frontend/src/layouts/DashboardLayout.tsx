@@ -42,10 +42,8 @@ export const DashboardLayout = () => {
     } else {
       // Default / Teacher view
       baseItems.push(
-        { name: 'Take Attendance', href: '/teacher/attendance', icon: ScanLine },
         { name: 'Students', href: '/teacher/students', icon: Users },
-        { name: 'Reports', href: '/teacher/reports', icon: FileText },
-        { name: 'Leave Requests', href: '/teacher/leaves', icon: CalendarOff },
+        { name: 'Attendance', href: '/teacher/attendance', icon: FileText },
         { name: 'Settings', href: '/settings', icon: Settings }
       );
     }
@@ -176,12 +174,12 @@ export const DashboardLayout = () => {
             >
               <div className="flex flex-col items-end">
                 <span className="text-[14px] font-medium text-[#111827] group-hover:text-[#0B65FE] transition-colors">
-                  {user?.firstName ? `${user.firstName} ${user.lastName}` : (user?.email || 'Reema Angelin')}
+                  {user?.role === 'ADMIN' ? 'Admin' : 'Dr. Ami Kumar Parida'}
                 </span>
                 <span className="text-[12px] text-[#667085]">{user?.role || 'Teacher'}</span>
               </div>
               <div className="w-10 h-10 rounded-[10px] bg-[#E5F0FF] text-[#0B65FE] flex items-center justify-center font-medium text-[14px] group-hover:bg-[#0B65FE] group-hover:text-white transition-colors">
-                {user?.firstName?.[0] || user?.email?.[0].toUpperCase() || 'R'}
+                {user?.role === 'ADMIN' ? 'A' : 'A'}
               </div>
             </div>
 

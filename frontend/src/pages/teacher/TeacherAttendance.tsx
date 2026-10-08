@@ -1,163 +1,173 @@
 import { useState, useEffect } from 'react';
-import { Wifi, Radio, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Check, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { fetchStudentsFromDB } from '../../api/supabase';
 
 export const TeacherAttendance = () => {
-  const [scanning, setScanning] = useState(true);
-  const [manualEntryOpen, setManualEntryOpen] = useState(false);
+  const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      const { data } = await fetchStudentsFromDB(5);
-      if (data) setStudents(data);
+    const loadStudents = async () => {
+      const { data } = await fetchStudentsFromDB();
+      if (data) {
+        // Filter only SEC B for this mock review page since DSP SEC B is the one in "REVIEW" state
+        setStudents(data.filter((s: any) => s.section === 'SEC B'));
+      }
     };
-    fetchStudents();
+    loadStudents();
   }, []);
 
-  // Simulating an RFID scan event purely for demo feel
+  // Mock attendance state for the students
+  const [attendanceState, setAttendanceState] = useState<Record<string, 'present' | 'absent' | 'exception'>>({});
+
   useEffect(() => {
-    if (!manualEntryOpen) {
-      const timer = setTimeout(() => {
-        setScanning(false);
-      }, 3000);
-      return () => clearTimeout(timer);
+    if (students.length > 0 && Object.keys(attendanceState).length === 0) {
+      const newState: Record<string, 'present' | 'absent' | 'exception'> = {};
+      students.forEach((s, i) => {
+        if (i === 3 || i === 7) newState[s.id] = 'exception';
+        else if (i % 5 === 0) newState[s.id] = 'absent';
+        else newState[s.id] = 'present';
+      });
+      setAttendanceState(newState);
     }
-  }, [manualEntryOpen]);
+  }, [students]);
+
+  const stats = {
+    total: students.length,
+    present: Object.values(attendanceState).filter(s => s === 'present').length,
+    absent: Object.values(attendanceState).filter(s => s === 'absent').length,
+    exceptions: Object.values(attendanceState).filter(s => s === 'exception').length,
+  };
+
+  const handleConfirm = () => {
+    // In a real app, send attendance to DB here
+    setConfirmed(true);
+    setTimeout(() => {
+      navigate('/teacher');
+    }, 2000);
+  };
+
+  const updateStatus = (id: string, status: 'present' | 'absent') => {
+    setAttendanceState(prev => ({ ...prev, [id]: status }));
+  };
 
   return (
-    <div className="max-w-[800px] mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-[32px] font-semibold text-[#111827] tracking-tight">Take Attendance</h1>
-          <p className="mt-1 text-[15px] text-[#667085]">Class ECE A · 28 Aug 2025</p>
-        </div>
+      {/* Back & Header */}
+      <div>
         <button 
-          onClick={() => setManualEntryOpen(true)}
-          className="h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#FFFFFF] transition-colors self-start sm:self-auto"
+          onClick={() => navigate('/teacher')}
+          className="flex items-center gap-2 text-[14px] font-medium text-[#667085] hover:text-[#111827] transition-colors mb-6"
         >
-          Manual Entry
+          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </button>
+        <h1 className="text-[32px] font-semibold text-[#111827] tracking-tight">Review Attendance</h1>
       </div>
 
-      {manualEntryOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111827]/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[20px] p-6 w-full max-w-md shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-[20px] font-semibold text-[#111827] mb-4">Manual Entry</h2>
-            <input type="text" placeholder="Enter student roll number..." className="w-full h-10 px-3 border border-[#E5E7EB] rounded-[10px] text-[14px] mb-4 focus:ring-2 focus:ring-[#0B65FE] focus:outline-none" />
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setManualEntryOpen(false)} className="h-10 px-4 rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#F3F4F6]">Cancel</button>
-              <button onClick={() => { setManualEntryOpen(false); setScanning(false); }} className="h-10 px-4 bg-[#0B65FE] text-white rounded-[10px] text-[14px] font-medium hover:bg-[#004BCC]">Mark Present</button>
-            </div>
-          </div>
+      {/* Class Details */}
+      <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-sm">
+        <h2 className="text-[20px] font-semibold text-[#111827]">Digital Signal Processing</h2>
+        <div className="flex flex-wrap items-center gap-2 text-[14px] text-[#667085] mt-2">
+          <span className="font-medium text-[#111827]">Section B</span>
+          <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
+          <span>RDB-06</span>
+          <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
+          <span>10:20 AM – 12:20 PM</span>
         </div>
-      )}
 
-      {/* Main Scan Area */}
-      <div className="bg-white rounded-[20px] p-10 border border-[#E5E7EB] shadow-subtle flex flex-col items-center justify-center min-h-[320px] relative overflow-hidden">
-        
-        {/* Device Status Corner */}
-        <div className="absolute top-6 left-6 flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#E5F0FF] flex items-center justify-center shrink-0">
-            <Radio className="w-5 h-5 text-[#0B65FE]" />
-          </div>
+        <div className="flex gap-6 mt-6 pt-6 border-t border-[#E5E7EB]">
           <div>
-            <div className="text-[14px] font-semibold text-[#111827]">ESP32-S3 (CSB-5)</div>
-            <div className="flex items-center gap-3 mt-1 text-[12px] text-[#667085]">
-              <span className="flex items-center gap-1"><Wifi className="w-3 h-3 text-[#10B981]" /> Wi-Fi Connected</span>
-              <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-[#10B981]" /> MQTT</span>
-            </div>
+            <div className="text-[24px] font-semibold text-[#111827] leading-none">{stats.total}</div>
+            <div className="text-[12px] font-medium text-[#667085] uppercase tracking-wider mt-1">Students</div>
           </div>
-        </div>
-
-        {/* Scan UI */}
-        <div className="mt-12 flex flex-col items-center text-center">
-          {scanning ? (
+          <div className="w-[1px] bg-[#E5E7EB]"></div>
+          <div>
+            <div className="text-[24px] font-semibold text-[#065F46] leading-none">{stats.present}</div>
+            <div className="text-[12px] font-medium text-[#667085] uppercase tracking-wider mt-1">Present</div>
+          </div>
+          <div className="w-[1px] bg-[#E5E7EB]"></div>
+          <div>
+            <div className="text-[24px] font-semibold text-[#991B1B] leading-none">{stats.absent}</div>
+            <div className="text-[12px] font-medium text-[#667085] uppercase tracking-wider mt-1">Absent</div>
+          </div>
+          {stats.exceptions > 0 && (
             <>
-              <div className="relative w-24 h-24 mb-6">
-                <div className="absolute inset-0 bg-[#0B65FE] opacity-10 rounded-full animate-ping"></div>
-                <div className="absolute inset-2 bg-[#0B65FE] opacity-20 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
-                <div className="absolute inset-4 bg-[#0B65FE] text-white rounded-full flex items-center justify-center shadow-lg">
-                  <Radio className="w-8 h-8" />
-                </div>
+              <div className="w-[1px] bg-[#E5E7EB]"></div>
+              <div>
+                <div className="text-[24px] font-semibold text-[#D97706] leading-none">{stats.exceptions}</div>
+                <div className="text-[12px] font-medium text-[#667085] uppercase tracking-wider mt-1">Exceptions</div>
               </div>
-              <h2 className="text-[24px] font-semibold text-[#111827] tracking-tight">READY TO SCAN</h2>
-              <p className="mt-2 text-[15px] text-[#667085]">Tap RFID card on the device</p>
             </>
-          ) : (
-            <div className="animate-in zoom-in duration-300">
-              <div className="w-24 h-24 mx-auto mb-6 bg-[#D1FAE5] text-[#10B981] rounded-full flex items-center justify-center shadow-lg">
-                <CheckCircle2 className="w-10 h-10" />
-              </div>
-              <h2 className="text-[24px] font-semibold text-[#111827] tracking-tight">{students[0]?.name || 'Loading...'}</h2>
-              <div className="flex items-center justify-center gap-2 mt-2 text-[15px]">
-                <span className="text-[#667085]">Roll No. {students[0]?.roll_number || '--'}</span>
-                <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
-                <span className="font-medium text-[#065F46]">Present</span>
-                <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
-                <span className="text-[#667085]">9:02 AM</span>
-              </div>
-              
-              <button 
-                onClick={() => setScanning(true)}
-                className="mt-8 text-[14px] font-medium text-[#0B65FE] hover:text-[#004BCC]"
-              >
-                Scan Next Student
-              </button>
-            </div>
           )}
         </div>
       </div>
 
-      {/* Live Activity */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[18px] font-semibold text-[#111827]">Live Activity</h3>
-          <span className="text-[13px] text-[#667085]">4 recorded today</span>
-        </div>
-        
-        <div className="bg-white rounded-[16px] border border-[#E5E7EB] shadow-subtle divide-y divide-[#E5E7EB]">
-          
-          {students.slice(0, 4).map((student, i) => {
-            const statuses = ['Present', 'Present', 'Absent', 'Present'];
-            const colors = ['bg-[#D1FAE5] text-[#065F46]', 'bg-[#D1FAE5] text-[#065F46]', 'bg-[#FEE2E2] text-[#991B1B]', 'bg-[#D1FAE5] text-[#065F46]'];
-            const times = ['9:02 AM', '9:01 AM', '8:58 AM', '8:57 AM'];
+      {/* Student List */}
+      <div className="bg-white rounded-[16px] border border-[#E5E7EB] shadow-sm overflow-hidden">
+        <div className="divide-y divide-[#E5E7EB]">
+          {students.map(student => {
+            const status = attendanceState[student.id];
             
-            const status = statuses[i % 4];
-            const color = colors[i % 4];
-            const time = times[i % 4];
-            
-            // Get initials from first and last name (or second word)
-            const nameParts = student.name.split(' ');
-            const initials = nameParts.length > 1 
-              ? `${nameParts[0][0]}${nameParts[1][0]}`
-              : student.name.substring(0, 2).toUpperCase();
-
             return (
-              <div key={student.id} className="p-4 flex items-center justify-between">
+              <div key={student.id} className={`p-4 flex items-center justify-between transition-colors ${status === 'exception' ? 'bg-[#FFFBEB]' : ''}`}>
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-medium ${color}`}>
-                    {initials}
+                  <div className="w-8 flex justify-center">
+                    {status === 'present' && <Check className="w-5 h-5 text-[#10B981]" strokeWidth={3} />}
+                    {status === 'absent' && <X className="w-5 h-5 text-[#EF4444]" strokeWidth={3} />}
+                    {status === 'exception' && <AlertTriangle className="w-5 h-5 text-[#F59E0B]" strokeWidth={2.5} />}
                   </div>
                   <div>
-                    <div className="text-[15px] font-medium text-[#111827]">{student.name}</div>
-                    <div className="text-[13px] text-[#667085]">Roll No. {student.roll_number}</div>
+                    <div className="text-[14px] font-semibold text-[#111827] uppercase">{student.name}</div>
+                    <div className="text-[13px] text-[#667085] font-mono">{student.roll_number}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className={`text-[14px] font-medium ${color.split(' ')[1]}`}>{status}</div>
-                  <div className="text-[12px] text-[#667085]">{time}</div>
-                </div>
+
+                {status === 'exception' && (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => updateStatus(student.id, 'present')}
+                      className="px-3 py-1.5 bg-[#D1FAE5] text-[#065F46] rounded-[6px] text-[12px] font-medium hover:bg-[#A7F3D0] transition-colors"
+                    >
+                      Mark Present
+                    </button>
+                    <button 
+                      onClick={() => updateStatus(student.id, 'absent')}
+                      className="px-3 py-1.5 bg-[#FEE2E2] text-[#991B1B] rounded-[6px] text-[12px] font-medium hover:bg-[#FECACA] transition-colors"
+                    >
+                      Mark Absent
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
-
         </div>
       </div>
-      
+
+      {/* Confirmation */}
+      <div className="pt-4">
+        {confirmed ? (
+          <div className="flex items-center justify-center gap-3 h-12 bg-[#D1FAE5] text-[#065F46] rounded-[10px] font-medium text-[15px] animate-in slide-in-from-bottom-2">
+            <CheckCircle2 className="w-5 h-5" /> Attendance confirmed successfully. Redirecting...
+          </div>
+        ) : (
+          <button 
+            onClick={handleConfirm}
+            disabled={stats.exceptions > 0}
+            className={`w-full h-12 rounded-[10px] font-medium text-[15px] transition-colors ${
+              stats.exceptions > 0 
+                ? 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed' 
+                : 'bg-[#0B65FE] text-white hover:bg-[#004BCC]'
+            }`}
+          >
+            {stats.exceptions > 0 ? 'Resolve exceptions before confirming' : 'Confirm Attendance'}
+          </button>
+        )}
+      </div>
+
     </div>
   );
 };
