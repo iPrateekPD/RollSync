@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, ChevronRight, CheckCircle2, Clock, CalendarDays } from 'lucide-react';
 import { fetchStudentsFromDB, fetchTodayClasses } from '../../api/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { Modal } from '../../components/ui/Modal';
 
 export const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export const TeacherDashboard = () => {
   const [classes, setClasses] = useState<any[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   
 
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -225,7 +227,11 @@ export const TeacherDashboard = () => {
                   : student.name.substring(0, 2).toUpperCase();
                   
                 return (
-                  <div key={student.id} className="p-4 flex items-center justify-between hover:bg-[#F9FAFB] transition-colors cursor-pointer group">
+                  <div 
+                    key={student.id} 
+                    onClick={() => setSelectedStudent(student)}
+                    className="p-4 flex items-center justify-between hover:bg-[#F9FAFB] transition-colors cursor-pointer group"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-[10px] bg-[#E5E7EB] flex items-center justify-center text-[14px] font-medium text-[#111827]">
                         {initials}
@@ -249,6 +255,65 @@ export const TeacherDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Student Attendance Modal */}
+      <Modal 
+        isOpen={selectedStudent !== null} 
+        onClose={() => setSelectedStudent(null)} 
+        title="Student Attendance Profile"
+      >
+        {selectedStudent && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 p-4 bg-[#F9FAFB] rounded-[12px] border border-[#E5E7EB]">
+              <div className="w-12 h-12 rounded-[12px] bg-[#E5E7EB] flex items-center justify-center text-[16px] font-medium text-[#111827]">
+                {selectedStudent.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <div className="text-[16px] font-semibold text-[#111827]">{selectedStudent.name}</div>
+                <div className="text-[14px] text-[#667085] mt-0.5 font-mono">{selectedStudent.roll_number} • {selectedStudent.section}</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-[14px] font-semibold text-[#111827] mb-3">Overall Attendance</h4>
+              <div className="flex items-center justify-between p-4 rounded-[12px] border border-[#E5E7EB]">
+                <div className="text-[14px] font-medium text-[#667085]">Total Classes Attended</div>
+                <div className="text-[16px] font-bold text-[#0B65FE]">
+                  {getAttendancePercent(selectedStudent.roll_number)}%
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-[14px] font-semibold text-[#111827] mb-3">Recent Classes</h4>
+              <div className="space-y-2">
+                {[
+                  { name: 'Digital Signal Processing', status: 'Present', date: 'Today, 10:20 AM' },
+                  { name: 'Microcontrollers', status: 'Present', date: 'Yesterday, 09:00 AM' },
+                  { name: 'Digital VLSI Design', status: 'Absent', date: 'Monday, 08:00 AM' },
+                ].map((c, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-[10px] bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors">
+                    <div>
+                      <div className="text-[14px] font-medium text-[#111827]">{c.name}</div>
+                      <div className="text-[12px] text-[#667085] mt-0.5">{c.date}</div>
+                    </div>
+                    <div className={`text-[13px] font-medium ${c.status === 'Present' ? 'text-[#065F46]' : 'text-[#991B1B]'}`}>
+                      {c.status}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setSelectedStudent(null)}
+              className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[15px] font-medium text-white bg-[#111827] hover:bg-[#374151] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#111827] transition-colors"
+            >
+              Close Profile
+            </button>
+          </div>
+        )}
+      </Modal>
 
     </div>
   );
