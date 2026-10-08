@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, Camera, Loader2, CheckCircle2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { useForm } from 'react-hook-form';
 
@@ -9,6 +9,14 @@ export const StudentsList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [trainModalOpen, setTrainModalOpen] = useState(false);
+  const [selectedStudentForTrain, setSelectedStudentForTrain] = useState<any>(null);
+  const [trainingStatus, setTrainingStatus] = useState<'idle' | 'capturing' | 'uploading' | 'success' | 'error'>('idle');
+  const [trainingError, setTrainingError] = useState('');
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
   const [fetchError, setFetchError] = useState<string | null>(null);
   const { register, handleSubmit, reset } = useForm();
 
@@ -76,6 +84,75 @@ export const StudentsList = () => {
     student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.studentId.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const openTrainModal = (student: any) => {
+    setSelectedStudentForTrain(student);
+    setTrainModalOpen(true);
+    setTrainingStatus('idle');
+  };
+
+  useEffect(() => {
+    if (trainModalOpen && trainingStatus === 'idle') {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then(stream => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            setTrainingStatus('capturing');
+          }
+        })
+        .catch(err => {
+          setTrainingError("Camera access denied or unavailable.");
+          setTrainingStatus('error');
+        });
+    }
+
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+        tracks.forEach(t => t.stop());
+      }
+    };
+  }, [trainModalOpen, trainingStatus]);
+
+  const captureAndTrain = async () => {
+    if (!videoRef.current || !canvasRef.current || !selectedStudentForTrain) return;
+    
+    setTrainingStatus('uploading');
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const formData = new FormData();
+      formData.append('file', blob, 'train.jpg');
+      
+      try {
+        const API_BASE = import.meta.env.VITE_CAMERA_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API_BASE}/api/camera/enroll/${selectedStudentForTrain.id}`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+          setTrainingStatus('success');
+        } else {
+          setTrainingError(data.detail || "Failed to train face");
+          setTrainingStatus('error');
+        }
+      } catch (err) {
+        setTrainingError("Failed to connect to backend");
+        setTrainingStatus('error');
+      }
+    }, 'image/jpeg', 0.8);
+  };
 
   return (
     <div className="space-y-[32px] animate-in fade-in duration-500">
@@ -149,6 +226,13 @@ export const StudentsList = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-[14px] font-medium">
                       <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => openTrainModal(student)}
+                          title="Train Face"
+                          className="text-[#667085] hover:text-[#10B981] p-1"
+                        >
+                          <Camera className="w-4 h-4" />
+                        </button>
                         <button className="text-[#667085] hover:text-[#0B65FE] p-1"><Edit2 className="w-4 h-4" /></button>
                         <button className="text-[#EF4444] hover:text-[#B91C1C] p-1"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -201,6 +285,71 @@ export const StudentsList = () => {
           </div>
         </form>
       </Modal>
+      
+      {/* Train Face Modal */}
+      <Modal isOpen={trainModalOpen} onClose={() => setTrainModalOpen(false)} title={`Train Face: ${selectedStudentForTrain?.firstName}`}>
+        <div className="flex flex-col items-center">
+          <p className="text-[14px] text-[#667085] mb-4 text-center">
+            Position the student clearly in the frame, ensure good lighting, and click capture.
+          </p>
+          
+          <div className="relative w-full aspect-video bg-black rounded-[12px] overflow-hidden flex items-center justify-center">
+            {(trainingStatus === 'idle' || trainingStatus === 'capturing') && (
+              <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+            )}
+            
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {trainingStatus === 'uploading' && (
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                <span>Extracting Facial Features...</span>
+              </div>
+            )}
+            
+            {trainingStatus === 'success' && (
+              <div className="absolute inset-0 bg-[#065F46] flex flex-col items-center justify-center text-white">
+                <CheckCircle2 className="w-12 h-12 mb-2" />
+                <span className="font-bold">Face Trained Successfully!</span>
+              </div>
+            )}
+            
+            {trainingStatus === 'error' && (
+              <div className="absolute inset-0 bg-[#991B1B] flex flex-col items-center justify-center text-white p-4 text-center">
+                <span className="font-bold mb-2">Error</span>
+                <span className="text-[14px]">{trainingError}</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-6 w-full flex justify-end gap-3">
+            <button 
+              onClick={() => setTrainModalOpen(false)} 
+              className="h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#F9FAFB]"
+            >
+              Close
+            </button>
+            {trainingStatus === 'capturing' && (
+              <button 
+                onClick={captureAndTrain}
+                className="h-10 px-4 bg-[#10B981] hover:bg-[#059669] text-white rounded-[10px] font-medium text-[14px] shadow-sm flex items-center gap-2"
+              >
+                <Camera className="w-4 h-4" />
+                Capture & Train
+              </button>
+            )}
+            {trainingStatus === 'error' && (
+              <button 
+                onClick={() => setTrainingStatus('idle')}
+                className="h-10 px-4 bg-[#0B65FE] hover:bg-[#004BCC] text-white rounded-[10px] font-medium text-[14px] shadow-sm"
+              >
+                Try Again
+              </button>
+            )}
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 };

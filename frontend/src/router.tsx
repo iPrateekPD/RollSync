@@ -38,6 +38,7 @@ const Reports = Loadable(lazy(() => import('./pages/dashboard/Reports').then(mod
 const Settings = Loadable(lazy(() => import('./pages/dashboard/Settings').then(module => ({ default: module.Settings }))));
 const LeaveRequests = Loadable(lazy(() => import('./pages/dashboard/LeaveRequests').then(module => ({ default: module.LeaveRequests }))));
 const DevicesList = Loadable(lazy(() => import('./pages/admin/DevicesList').then(module => ({ default: module.DevicesList }))));
+const CameraCapture = Loadable(lazy(() => import('./pages/camera/CameraCapture').then(module => ({ default: module.CameraCapture }))));
 
 export const router = createBrowserRouter([
   {
@@ -47,6 +48,10 @@ export const router = createBrowserRouter([
   {
     path: '/about',
     element: <About />
+  },
+  {
+    path: '/camera/:token',
+    element: <CameraCapture />
   },
   {
     element: <AuthLayout />,

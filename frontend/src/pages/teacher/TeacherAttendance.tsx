@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Check, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Check, X, AlertTriangle, CheckCircle2, Camera } from 'lucide-react';
 import { fetchStudentsFromDB } from '../../api/supabase';
+import { Modal } from '../../components/ui/Modal';
+import { QRCodeSVG } from 'qrcode.react';
 
 export const TeacherAttendance = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [students, setStudents] = useState<any[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+  const [cameraSession, setCameraSession] = useState<{ token: string, status: string } | null>(null);
+  const [polling, setPolling] = useState(false);
   
   const cls = location.state?.class;
 
@@ -60,6 +65,62 @@ export const TeacherAttendance = () => {
     setAttendanceState(prev => ({ ...prev, [id]: status }));
   };
 
+  const startCameraAttendance = async () => {
+    setCameraModalOpen(true);
+    setCameraSession(null);
+    try {
+      const API_BASE = import.meta.env.VITE_CAMERA_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${API_BASE}/api/camera/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          timetable_id: cls.id,
+          subject_id: cls.subject_id 
+        })
+      });
+      const data = await res.json();
+      if (data.token) {
+        setCameraSession({ token: data.token, status: 'active' });
+        setPolling(true);
+      }
+    } catch (err) {
+      console.error("Failed to start camera session", err);
+    }
+  };
+
+  useEffect(() => {
+    let interval: any;
+    if (polling && cameraSession?.token) {
+      interval = setInterval(async () => {
+        try {
+          const API_BASE = import.meta.env.VITE_CAMERA_API_URL || 'http://localhost:8000';
+          const res = await fetch(`${API_BASE}/api/camera/session/${cameraSession.token}/status`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'completed') {
+              setPolling(false);
+              setCameraSession(prev => prev ? { ...prev, status: 'completed' } : null);
+              
+              // Update local state based on camera observations
+              if (data.camera_observations && data.camera_observations.length > 0) {
+                const newState = { ...attendanceState };
+                data.camera_observations.forEach((obs: any) => {
+                  if (obs.student_id && obs.status === 'verified') {
+                    newState[obs.student_id] = 'present';
+                  }
+                });
+                setAttendanceState(newState);
+              }
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [polling, cameraSession?.token, attendanceState]);
+
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       
@@ -110,6 +171,17 @@ export const TeacherAttendance = () => {
               </div>
             </>
           )}
+        </div>
+        
+        {/* Camera Action Button */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={startCameraAttendance}
+            className="flex items-center gap-2 px-4 py-2 bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#111827] rounded-[8px] font-medium transition-colors"
+          >
+            <Camera className="w-5 h-5" />
+            Start Camera Attendance
+          </button>
         </div>
       </div>
       )}
@@ -176,6 +248,65 @@ export const TeacherAttendance = () => {
           </button>
         )}
       </div>
+
+      {/* Camera Modal */}
+      <Modal 
+        isOpen={cameraModalOpen} 
+        onClose={() => {
+          setCameraModalOpen(false);
+          setPolling(false);
+        }}
+        title="Live Camera Attendance"
+      >
+        <div className="flex flex-col items-center justify-center p-4">
+          {!cameraSession ? (
+            <div className="py-12 flex flex-col items-center">
+              <div className="w-8 h-8 border-4 border-[#0B65FE] border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-[#667085] font-medium">Initializing camera session...</p>
+            </div>
+          ) : cameraSession.status === 'completed' ? (
+            <div className="py-12 flex flex-col items-center text-center animate-in zoom-in-95">
+              <div className="w-16 h-16 bg-[#D1FAE5] rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-[#10B981]" />
+              </div>
+              <h3 className="text-[20px] font-bold text-[#111827]">Scan Complete</h3>
+              <p className="text-[#667085] mt-2">The camera has processed the classroom.</p>
+              <button 
+                onClick={() => setCameraModalOpen(false)}
+                className="mt-6 px-6 py-2 bg-[#0B65FE] text-white rounded-[8px] font-medium"
+              >
+                Review Attendance
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <p className="text-center text-[#667085] mb-6 max-w-sm">
+                Scan this QR code with the classroom phone to temporarily turn it into a smart attendance camera.
+              </p>
+              
+              <div className="p-4 bg-white rounded-[16px] shadow-sm border border-[#E5E7EB]">
+                <QRCodeSVG 
+                  value={`${window.location.origin}/camera/${cameraSession.token}`}
+                  size={200}
+                  level="H"
+                />
+              </div>
+              
+              <div className="mt-6 px-4 py-3 bg-[#F3F4F6] rounded-[8px] flex items-center gap-3 w-full">
+                <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></div>
+                <span className="text-[14px] font-medium text-[#111827]">Waiting for camera feed...</span>
+              </div>
+              
+              <div className="mt-4 text-[12px] text-center text-[#667085]">
+                <p>Or open this link on the phone:</p>
+                <a href={`${window.location.origin}/camera/${cameraSession.token}`} target="_blank" rel="noreferrer" className="text-[#0B65FE] break-all hover:underline mt-1 block">
+                  {window.location.origin}/camera/{cameraSession.token}
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
 
     </div>
   );
