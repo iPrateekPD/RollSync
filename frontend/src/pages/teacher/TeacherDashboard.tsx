@@ -110,7 +110,7 @@ export const TeacherDashboard = () => {
               <span className="text-[#991B1B] font-medium">{cls.absent} Absent</span>
             </div>
             <button 
-              onClick={() => navigate('/teacher/attendance', { state: { classId: cls.id } })}
+              onClick={() => navigate('/teacher/attendance', { state: { class: cls } })}
               className="w-full flex items-center justify-center gap-2 h-10 bg-[#0B65FE] text-white rounded-[8px] text-[13px] font-medium hover:bg-[#004BCC] transition-colors"
             >
               REVIEW ATTENDANCE <ChevronRight className="w-4 h-4" />

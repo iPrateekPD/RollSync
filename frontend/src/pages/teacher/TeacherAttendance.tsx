@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { fetchStudentsFromDB } from '../../api/supabase';
 
 export const TeacherAttendance = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [students, setStudents] = useState<any[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  
+  const cls = location.state?.class;
 
   useEffect(() => {
+    if (!cls) {
+      navigate('/teacher');
+      return;
+    }
+
     const loadStudents = async () => {
       const { data } = await fetchStudentsFromDB();
       if (data) {
-        // Filter only SEC B for this mock review page since DSP SEC B is the one in "REVIEW" state
-        setStudents(data.filter((s: any) => s.section === 'SEC B'));
+        setStudents(data.filter((s: any) => s.section === cls.section));
       }
     };
     loadStudents();
-  }, []);
+  }, [cls, navigate]);
 
   // Mock attendance state for the students
   const [attendanceState, setAttendanceState] = useState<Record<string, 'present' | 'absent' | 'exception'>>({});
@@ -68,15 +75,16 @@ export const TeacherAttendance = () => {
       </div>
 
       {/* Class Details */}
-      <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-sm">
-        <h2 className="text-[20px] font-semibold text-[#111827]">Digital Signal Processing</h2>
-        <div className="flex flex-wrap items-center gap-2 text-[14px] text-[#667085] mt-2">
-          <span className="font-medium text-[#111827]">Section B</span>
-          <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
-          <span>RDB-06</span>
-          <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
-          <span>10:20 AM – 12:20 PM</span>
-        </div>
+      {cls && (
+        <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-sm">
+          <h2 className="text-[20px] font-semibold text-[#111827]">{cls.subjects?.subject_name}</h2>
+          <div className="flex flex-wrap items-center gap-2 text-[14px] text-[#667085] mt-2">
+            <span className="font-medium text-[#111827]">{cls.section}</span>
+            <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
+            <span>{cls.room}</span>
+            <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
+            <span>{cls.start_time} – {cls.end_time}</span>
+          </div>
 
         <div className="flex gap-6 mt-6 pt-6 border-t border-[#E5E7EB]">
           <div>
@@ -104,6 +112,7 @@ export const TeacherAttendance = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Student List */}
       <div className="bg-white rounded-[16px] border border-[#E5E7EB] shadow-sm overflow-hidden">
