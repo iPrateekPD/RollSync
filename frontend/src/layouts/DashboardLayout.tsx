@@ -7,12 +7,10 @@ import {
   LayoutDashboard, 
   Users, 
   FileText, 
-  CalendarOff,
   RadioReceiver,
   Settings,
   Bell,
-  Search,
-  ScanLine
+  Search
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';

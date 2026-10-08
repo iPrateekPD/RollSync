@@ -14,7 +14,7 @@ export const TeacherDashboard = () => {
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   useEffect(() => {
