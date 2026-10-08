@@ -81,6 +81,7 @@ export const DashboardLayout = () => {
             <NavLink
               key={item.name}
               to={item.href}
+              end={item.name === 'Dashboard'}
               className={({ isActive }) => cn(
                 "flex items-center px-[12px] py-[10px] text-[14px] font-medium rounded-lg transition-colors group",
                 isActive 
