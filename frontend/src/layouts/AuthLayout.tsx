@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { ScanLine } from 'lucide-react';
+
 
 export const AuthLayout = () => {
   return (

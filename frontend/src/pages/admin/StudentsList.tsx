@@ -56,7 +56,7 @@ export const StudentsList = () => {
         section: data.lastName.toUpperCase().includes('SEC') ? data.lastName.toUpperCase() : null // Hack to allow setting section via last name for now
       };
       
-      const { data: result, error } = await insertStudentToDB(studentData);
+      const { error } = await insertStudentToDB(studentData);
       
       if (error) {
         alert("Failed to add student: " + error.message);
