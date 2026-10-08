@@ -5,6 +5,7 @@ import { fetchStudentsFromDB } from '../../api/supabase';
 
 export const TeacherDashboard = () => {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [selectedClass, setSelectedClass] = useState('ECE A');
 
   useEffect(() => {
     const fetchRecent = async () => {
@@ -24,7 +25,7 @@ export const TeacherDashboard = () => {
           <div className="flex items-center gap-2 mt-2 text-[15px] text-[#667085]">
             <span>Teacher</span>
             <span className="w-1 h-1 rounded-full bg-[#E5E7EB]"></span>
-            <span>Class VIII-B</span>
+            <span>Class {selectedClass}</span>
           </div>
         </div>
 
@@ -34,10 +35,17 @@ export const TeacherDashboard = () => {
             <div className="text-[13px] text-[#667085]">9:02 AM</div>
           </div>
           <div className="h-10 w-[1px] bg-[#E5E7EB]"></div>
-          <button className="flex items-center gap-2 h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#FFFFFF] transition-colors">
-            VIII-B
-            <ChevronDown className="w-4 h-4 text-[#667085]" />
-          </button>
+          <div className="relative">
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="appearance-none flex items-center gap-2 h-10 pl-4 pr-10 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#FFFFFF] transition-colors focus:outline-none focus:ring-2 focus:ring-[#0B65FE]"
+            >
+              <option value="ECE A">ECE A</option>
+              <option value="ECE B">ECE B</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-[#667085] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
       </div>
 

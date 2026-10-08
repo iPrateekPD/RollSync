@@ -32,7 +32,7 @@ export const TeacherAttendance = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-semibold text-[#111827] tracking-tight">Take Attendance</h1>
-          <p className="mt-1 text-[15px] text-[#667085]">Class VIII-B · 28 Aug 2025</p>
+          <p className="mt-1 text-[15px] text-[#667085]">Class ECE A · 28 Aug 2025</p>
         </div>
         <button 
           onClick={() => setManualEntryOpen(true)}
