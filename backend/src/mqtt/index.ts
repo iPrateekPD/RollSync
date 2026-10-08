@@ -30,46 +30,29 @@ export const setupMqtt = () => {
       // Parse payload
       const payload = JSON.parse(message.toString());
       
+      // Phase 2: Pure MQTT ingestion logging
+      if (eventType === 'rfid') {
+        const timestamp = payload.timestamp ? new Date(payload.timestamp).toISOString() : new Date().toISOString();
+        
+        console.log('\n==========================================');
+        console.log('ROLLSYNC MQTT EVENT');
+        console.log('==========================================');
+        console.log(`Topic : ${topic}`);
+        console.log(`UID   : ${payload.uid || 'UNKNOWN'}`);
+        console.log(`Name  : ${payload.name || 'UNKNOWN'}`);
+        console.log(`Time  : ${timestamp}`);
+        console.log('==========================================\n');
+      }
+
+      /* Phase 3+ Database Logic Temporarily Disabled
       // Look up classroom
       const classroom = await prisma.classroom.findUnique({
         where: { name: classroomName },
         include: { device: true }
       });
+      ...
+      */
       
-      if (!classroom) return;
-
-      // Update device heartbeat if applicable
-      if (classroom.device) {
-        await prisma.device.update({
-          where: { id: classroom.device.id },
-          data: {
-            lastHeartbeat: new Date(),
-            status: DeviceStatus.ONLINE,
-            ...(payload.wifiRssi && { wifiRssi: payload.wifiRssi }),
-            ...(payload.freeHeap && { freeHeap: payload.freeHeap })
-          }
-        });
-      }
-
-      const timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
-
-      switch (eventType) {
-        case 'rfid':
-          if (payload.uid) {
-            await AttendanceService.processRfidEvent(classroom.id, payload.uid, timestamp);
-          }
-          break;
-        case 'ble':
-          if (payload.token && payload.rssi) {
-            await AttendanceService.processBleObservation(classroom.id, payload.token, payload.rssi, timestamp);
-          }
-          break;
-        case 'heartbeat':
-          // Already handled above
-          break;
-        default:
-          console.warn(`Unknown MQTT topic: ${topic}`);
-      }
     } catch (error) {
       console.error(`Error processing MQTT message on topic ${topic}:`, error);
     }

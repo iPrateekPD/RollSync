@@ -29,9 +29,15 @@ const TimetableList = Loadable(lazy(() => import('./pages/admin/TimetableList').
 const TeacherDashboard = Loadable(lazy(() => import('./pages/teacher/TeacherDashboard').then(module => ({ default: module.TeacherDashboard }))));
 const TeacherClasses = Loadable(lazy(() => import('./pages/teacher/TeacherClasses').then(module => ({ default: module.TeacherClasses }))));
 const TeacherAttendance = Loadable(lazy(() => import('./pages/teacher/TeacherAttendance').then(module => ({ default: module.TeacherAttendance }))));
+const LiveMonitor = Loadable(lazy(() => import('./pages/dashboard/LiveMonitor').then(module => ({ default: module.LiveMonitor }))));
+const Timetable = Loadable(lazy(() => import('./pages/dashboard/Timetable').then(module => ({ default: module.Timetable }))));
 const StudentDashboard = Loadable(lazy(() => import('./pages/student/StudentDashboard').then(module => ({ default: module.StudentDashboard }))));
 const StudentAttendance = Loadable(lazy(() => import('./pages/student/StudentAttendance').then(module => ({ default: module.StudentAttendance }))));
 const StudentLeaves = Loadable(lazy(() => import('./pages/student/StudentLeaves').then(module => ({ default: module.StudentLeaves }))));
+const Reports = Loadable(lazy(() => import('./pages/dashboard/Reports').then(module => ({ default: module.Reports }))));
+const Settings = Loadable(lazy(() => import('./pages/dashboard/Settings').then(module => ({ default: module.Settings }))));
+const LeaveRequests = Loadable(lazy(() => import('./pages/dashboard/LeaveRequests').then(module => ({ default: module.LeaveRequests }))));
+const DevicesList = Loadable(lazy(() => import('./pages/admin/DevicesList').then(module => ({ default: module.DevicesList }))));
 
 export const router = createBrowserRouter([
   {
@@ -61,6 +67,9 @@ export const router = createBrowserRouter([
           { path: '/admin/students', element: <StudentsList /> },
           { path: '/admin/teachers', element: <TeachersList /> },
           { path: '/admin/timetable', element: <TimetableList /> },
+          { path: '/admin/reports', element: <Reports /> },
+          { path: '/admin/devices', element: <DevicesList /> },
+          { path: '/settings', element: <Settings /> },
           // etc
         ]
       },
@@ -70,6 +79,12 @@ export const router = createBrowserRouter([
           { path: '/teacher', element: <TeacherDashboard /> },
           { path: '/teacher/classes', element: <TeacherClasses /> },
           { path: '/teacher/attendance', element: <TeacherAttendance /> },
+          { path: '/teacher/live', element: <LiveMonitor /> },
+          { path: '/teacher/timetable', element: <Timetable /> },
+          { path: '/teacher/reports', element: <Reports /> },
+          { path: '/teacher/students', element: <StudentsList /> },
+          { path: '/teacher/leaves', element: <LeaveRequests /> },
+          { path: '/settings', element: <Settings /> },
         ]
       },
       {

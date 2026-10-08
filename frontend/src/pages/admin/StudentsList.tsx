@@ -1,23 +1,44 @@
 import { useState, useEffect } from 'react';
-import { apiClient } from '../../api/client';
-import { Plus, Search, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { useForm } from 'react-hook-form';
 
+import { fetchStudentsFromDB } from '../../api/supabase';
+
 export const StudentsList = () => {
+  const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const { register, handleSubmit, reset } = useForm();
 
   const fetchStudents = async () => {
     try {
-      const response = await apiClient.get('/academic/students');
-      setStudents(response.data);
-    } catch (error) {
-      console.error('Failed to fetch students', error);
-    } finally {
-      setIsLoading(false);
+      const { data, error } = await fetchStudentsFromDB(undefined, true);
+        
+      if (error) {
+        console.error("Supabase fetch error:", error);
+        setFetchError(error.message || "Failed to fetch students");
+      } else {
+        setFetchError(null);
+      }
+        
+      if (data) {
+        setStudents(data.map((s: any) => ({
+          id: s.id,
+          studentId: s.roll_number,
+          firstName: s.name,
+          lastName: s.section || '',
+          user: { 
+            email: s.email || `${s.roll_number.toLowerCase()}.${(s.name || '').toLowerCase().replace(/\\s+/g, '')}@giet.edu` 
+          },
+          rfidTag: s.ug_no || 'None',
+          bleMacAddress: null
+        })));
+      }
+    } catch (err: any) {
+      console.error("Error fetching students:", err);
+      setFetchError(err.message || "Unknown error fetching students");
     }
   };
 
@@ -26,96 +47,95 @@ export const StudentsList = () => {
   }, []);
 
   const onSubmit = async (data: any) => {
-    try {
-      await apiClient.post('/academic/students', data);
-      setIsModalOpen(false);
-      reset();
-      fetchStudents();
-    } catch (error) {
-      console.error('Failed to create student', error);
-    }
+    setStudents([...students, { ...data, id: Date.now().toString(), user: { email: data.email } }]);
+    setIsModalOpen(false);
+    reset();
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-foreground" />
-      </div>
-    );
-  }
+  const filteredStudents = students.filter(student => 
+    student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    student.studentId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-[32px] animate-in fade-in duration-500">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Students</h1>
-          <p className="mt-1 text-muted-foreground">Manage student records, credentials, and access devices.</p>
+          <h1 className="text-[32px] font-semibold tracking-tight text-[#111827]">Students</h1>
+          <p className="mt-1 text-[15px] text-[#667085]">Manage student records, credentials, and access devices.</p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex gap-3">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="flex items-center justify-center gap-2 h-10 px-4 bg-[#4338CA] hover:bg-[#3730A3] text-white rounded-[10px] font-medium text-[14px] transition-colors shadow-sm"
           >
-            <Plus className="w-4 h-4 mr-2" strokeWidth={2} />
+            <Plus className="w-4 h-4" />
             Add Student
           </button>
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-        <div className="p-4 border-b border-border bg-card/50">
+      {fetchError && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+          Error loading data: {fetchError}
+        </div>
+      )}
+
+      <div className="bg-white rounded-[20px] shadow-subtle border border-[#E5E7EB] overflow-hidden">
+        <div className="p-4 border-b border-[#E5E7EB] bg-white">
           <div className="relative max-w-sm">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]" />
             <input
               type="text"
               placeholder="Search students..."
-              className="w-full pl-9 pr-4 py-2 text-sm bg-transparent border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-none transition-all placeholder:text-muted-foreground text-foreground"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 bg-[#F8F9FC] border-none rounded-[10px] text-[14px] text-[#111827] placeholder:text-[#667085] focus:ring-2 focus:ring-[#4338CA] focus:outline-none transition-shadow"
             />
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-zinc-50/50">
+          <table className="min-w-full divide-y divide-[#E5E7EB]">
+            <thead className="bg-[#F8F9FC]">
               <tr>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Student ID</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Access Badges</th>
-                <th scope="col" className="px-6 py-4 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider"></th>
+                <th scope="col" className="px-6 py-4 text-left text-[12px] font-semibold text-[#667085] uppercase tracking-wider">Student ID</th>
+                <th scope="col" className="px-6 py-4 text-left text-[12px] font-semibold text-[#667085] uppercase tracking-wider">Name</th>
+                <th scope="col" className="px-6 py-4 text-left text-[12px] font-semibold text-[#667085] uppercase tracking-wider">Email</th>
+                <th scope="col" className="px-6 py-4 text-left text-[12px] font-semibold text-[#667085] uppercase tracking-wider">Access Badges</th>
+                <th scope="col" className="px-6 py-4 text-right text-[12px] font-semibold text-[#667085] uppercase tracking-wider"></th>
               </tr>
             </thead>
-            <tbody className="bg-card divide-y divide-border">
-              {students.map((student) => (
-                <tr key={student.id} className="hover:bg-zinc-50/50 transition-colors group">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{student.studentId}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                    <div className="font-medium">{student.firstName} {student.lastName}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{student.user?.email || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    <div className="flex gap-2">
-                      <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 border border-zinc-200">
-                        RFID: {student.rfidTag || 'None'}
-                      </span>
-                      <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 border border-zinc-200">
-                        BLE: {student.bleMacAddress || 'None'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="text-muted-foreground hover:text-foreground p-1"><Edit2 className="w-4 h-4" /></button>
-                      <button className="text-destructive hover:text-destructive/80 p-1"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {students.length === 0 && (
+            <tbody className="bg-white divide-y divide-[#E5E7EB]">
+              {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground text-sm">
-                    No students found. Add a student to get started.
+                  <td colSpan={5} className="px-6 py-8 text-center text-[#667085]">
+                    {fetchError ? "Cannot load students." : "No students found."}
                   </td>
                 </tr>
+              ) : (
+                filteredStudents.map((student) => (
+                  <tr key={student.id} className="hover:bg-[#F8F9FC] transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] font-medium text-[#111827]">{student.studentId}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-[#111827]">
+                      <div className="font-medium">{student.firstName} {student.lastName}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-[#667085]">{student.user?.email || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-[14px] text-[#667085]">
+                      <div className="flex gap-2">
+                        <span className="inline-flex items-center rounded-md bg-[#EEEDFA] px-2 py-1 text-[12px] font-medium text-[#4338CA]">
+                          RFID: {student.rfidTag || 'None'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-[14px] font-medium">
+                      <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="text-[#667085] hover:text-[#4338CA] p-1"><Edit2 className="w-4 h-4" /></button>
+                        <button className="text-[#EF4444] hover:text-[#B91C1C] p-1"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -126,41 +146,37 @@ export const StudentsList = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">First Name</label>
-              <input {...register('firstName')} className="w-full rounded-lg border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-3 py-2 bg-transparent transition-all" />
+              <label className="block text-[14px] font-medium text-[#111827] mb-1">First Name</label>
+              <input {...register('firstName', { required: true })} className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Last Name</label>
-              <input {...register('lastName')} className="w-full rounded-lg border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-3 py-2 bg-transparent transition-all" />
+              <label className="block text-[14px] font-medium text-[#111827] mb-1">Last Name</label>
+              <input {...register('lastName', { required: true })} className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Email Address (Creates Login)</label>
-            <input type="email" {...register('email')} className="w-full rounded-lg border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-3 py-2 bg-transparent transition-all" />
+            <label className="block text-[14px] font-medium text-[#111827] mb-1">Email Address</label>
+            <input type="email" {...register('email', { required: true })} className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Password</label>
-            <input type="password" {...register('password')} className="w-full rounded-lg border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-3 py-2 bg-transparent transition-all" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Student ID (Roll No)</label>
-            <input {...register('studentId')} className="w-full rounded-lg border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-3 py-2 bg-transparent transition-all" />
+            <label className="block text-[14px] font-medium text-[#111827] mb-1">Student ID (Roll No)</label>
+            <input {...register('studentId', { required: true })} className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">RFID Tag</label>
-              <input {...register('rfidTag')} className="w-full rounded-lg border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-3 py-2 bg-transparent transition-all" />
+              <label className="block text-[14px] font-medium text-[#111827] mb-1">RFID Tag</label>
+              <input {...register('rfidTag')} className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">BLE MAC Address</label>
-              <input {...register('bleMacAddress')} className="w-full rounded-lg border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-3 py-2 bg-transparent transition-all" />
+              <label className="block text-[14px] font-medium text-[#111827] mb-1">BLE MAC Address</label>
+              <input {...register('bleMacAddress')} className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none" />
             </div>
           </div>
-          <div className="mt-8 flex justify-end gap-3 border-t border-border pt-5">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="inline-flex justify-center rounded-xl bg-transparent px-4 py-2.5 text-sm font-medium text-foreground ring-1 ring-inset ring-border hover:bg-zinc-50 transition-colors">
+          <div className="mt-8 flex justify-end gap-3 border-t border-[#E5E7EB] pt-5">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#F8F9FC] transition-colors">
               Cancel
             </button>
-            <button type="submit" className="inline-flex justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90 transition-opacity">
+            <button type="submit" className="h-10 px-4 bg-[#4338CA] hover:bg-[#3730A3] text-white rounded-[10px] font-medium text-[14px] transition-colors shadow-sm">
               Save Student
             </button>
           </div>

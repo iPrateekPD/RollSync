@@ -30,13 +30,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = async () => {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        try {
-          const response = await apiClient.get('/auth/me');
-          setUser(response.data);
-        } catch (error) {
-          console.error('Failed to restore session:', error);
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+        if (token === 'mock-access-token') {
+          // Restore mock session
+          setUser({
+            id: 'mock-teacher-1',
+            email: 'teacher@rollsync.com',
+            role: 'TEACHER',
+            firstName: 'Reema',
+            lastName: 'Angelin'
+          });
+        } else {
+          try {
+            const response = await apiClient.get('/auth/me');
+            setUser(response.data);
+          } catch (error) {
+            console.error('Failed to restore session:', error);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+          }
         }
       }
       setIsLoading(false);

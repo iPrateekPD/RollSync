@@ -27,12 +27,26 @@ export const Login = () => {
   const onSubmit = async (data: LoginForm) => {
     try {
       setError(null);
+      
+      // Mock login for demo purposes
+      if (data.email === 'teacher@rollsync.com' && data.password === 'password123') {
+        const mockUser = {
+          id: 'mock-teacher-1',
+          email: 'teacher@rollsync.com',
+          role: 'TEACHER' as const,
+          firstName: 'Reema',
+          lastName: 'Angelin'
+        };
+        login('mock-access-token', 'mock-refresh-token', mockUser);
+        navigate('/teacher', { replace: true });
+        return;
+      }
+      
       const response = await apiClient.post('/auth/login', data);
       
       const { accessToken, refreshToken, user } = response.data;
       login(accessToken, refreshToken, user);
       
-      // Redirect to the intended page or default dashboard
       const from = (location.state as any)?.from?.pathname || `/${user.role.toLowerCase()}`;
       navigate(from, { replace: true });
     } catch (err: any) {
@@ -41,55 +55,80 @@ export const Login = () => {
   };
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
       {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-xl flex items-start text-sm border border-destructive/20">
+        <div className="bg-[#FEE2E2] text-[#991B1B] p-4 rounded-[12px] flex items-start text-[14px]">
           <AlertCircle className="w-5 h-5 mr-3 shrink-0" strokeWidth={2} />
           <p>{error}</p>
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-foreground">Email address</label>
-        <div className="mt-2">
-          <input
-            {...register('email')}
-            type="email"
-            placeholder="name@example.com"
-            className="w-full rounded-xl border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-4 py-3 bg-transparent transition-all placeholder:text-muted-foreground text-foreground"
-          />
-          {errors.email && (
-            <p className="mt-2 text-sm text-destructive">{errors.email.message}</p>
-          )}
-        </div>
+        <label className="block text-[14px] font-medium text-[#111827] mb-1.5">Email address</label>
+        <input
+          {...register('email')}
+          type="email"
+          placeholder="teacher@rollsync.com"
+          className="w-full h-11 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[15px] placeholder:text-[#667085] focus:outline-none focus:ring-2 focus:ring-[#4338CA] focus:border-transparent transition-shadow shadow-sm"
+        />
+        {errors.email && (
+          <p className="mt-1.5 text-[13px] text-[#EF4444]">{errors.email.message}</p>
+        )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground">Password</label>
-        <div className="mt-2">
-          <input
-            {...register('password')}
-            type="password"
-            placeholder="••••••••"
-            className="w-full rounded-xl border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm border px-4 py-3 bg-transparent transition-all placeholder:text-muted-foreground text-foreground"
-          />
-          {errors.password && (
-            <p className="mt-2 text-sm text-destructive">{errors.password.message}</p>
-          )}
-        </div>
+        <label className="block text-[14px] font-medium text-[#111827] mb-1.5">Password</label>
+        <input
+          {...register('password')}
+          type="password"
+          placeholder="••••••••"
+          className="w-full h-11 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[15px] placeholder:text-[#667085] focus:outline-none focus:ring-2 focus:ring-[#4338CA] focus:border-transparent transition-shadow shadow-sm"
+        />
+        {errors.password && (
+          <p className="mt-1.5 text-[13px] text-[#EF4444]">{errors.password.message}</p>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between pt-1">
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" className="w-4 h-4 rounded border-[#E5E7EB] text-[#4338CA] focus:ring-[#4338CA]" />
+          <span className="text-[14px] text-[#667085] group-hover:text-[#111827] transition-colors">Remember me</span>
+        </label>
+        <a href="#" className="text-[14px] font-medium text-[#4338CA] hover:text-[#3730A3] transition-colors">
+          Forgot password?
+        </a>
       </div>
 
       <div className="pt-2">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+          className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[15px] font-medium text-white bg-[#4338CA] hover:bg-[#3730A3] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4338CA] disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            'Sign in to account'
+            'Sign In'
           )}
+        </button>
+      </div>
+
+      <div className="relative py-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-[#E5E7EB]"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-4 bg-white text-[13px] text-[#667085]">Demo access</span>
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="button"
+          onClick={() => onSubmit({ email: 'teacher@rollsync.com', password: 'password123' })}
+          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[15px] font-medium text-[#111827] bg-white hover:bg-[#F8F9FC] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4338CA] transition-colors"
+        >
+          One-Click Teacher Demo
         </button>
       </div>
     </form>

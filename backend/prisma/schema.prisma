@@ -7,449 +7,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      Role     @default(STUDENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  student   Student?
-  teacher   Teacher?
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model attendance_records {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id          String              @db.Uuid
+  session_id          String              @db.Uuid
+  device_id           String?             @db.Uuid
+  timestamp           DateTime            @default(now()) @db.Timestamptz(6)
+  status              String              @default("present")
+  source              String              @default("rfid")
+  created_at          DateTime            @default(now()) @db.Timestamptz(6)
+  devices             devices?            @relation(fields: [device_id], references: [id], onUpdate: NoAction)
+  attendance_sessions attendance_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students            students            @relation(fields: [student_id], references: [id], onUpdate: NoAction)
+
+  @@index([session_id])
+  @@index([student_id])
+  @@index([timestamp])
 }
 
-enum Role {
-  ADMIN
-  TEACHER
-  STUDENT
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model attendance_sessions {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subject_id         String               @db.Uuid
+  classroom          String
+  start_time         DateTime             @db.Timestamptz(6)
+  end_time           DateTime             @db.Timestamptz(6)
+  active             Boolean              @default(false)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  attendance_records attendance_records[]
+  subjects           subjects             @relation(fields: [subject_id], references: [id], onUpdate: NoAction)
+
+  @@index([active])
 }
 
-model Student {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id])
-  studentId       String   @unique // e.g. Roll No / Registration No
-  firstName       String
-  lastName        String
-  programId       String
-  program         Program  @relation(fields: [programId], references: [id])
-  semesterId      String
-  semester        Semester @relation(fields: [semesterId], references: [id])
-  sectionId       String
-  section         Section  @relation(fields: [sectionId], references: [id])
-  
-  rfidCard        RfidCard?
-  bleIdentity     BleIdentity?
-  erpSessionCookie String?
-  
-  enrollments     CourseEnrollment[]
-  attendanceSessions AttendanceSession[]
-  attendances     AttendanceResult[]
-  marks           Mark[]
-  submissions     AssignmentSubmission[]
-  leaveRequests   LeaveRequest[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model devices {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  device_id          String               @unique
+  device_name        String
+  classroom          String?
+  mqtt_topic         String
+  status             String               @default("offline")
+  last_seen          DateTime?            @db.Timestamptz(6)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  attendance_records attendance_records[]
 }
 
-model Teacher {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id])
-  teacherId       String   @unique
-  firstName       String
-  lastName        String
-  departmentId    String
-  department      Department @relation(fields: [departmentId], references: [id])
-  
-  courses         Course[]
-  timetable       TimetableEntry[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model rfid_cards {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uid        String   @unique
+  student_id String   @db.Uuid
+  active     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  students   students @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([student_id])
 }
 
-model Department {
-  id              String   @id @default(uuid())
-  code            String   @unique
-  name            String
-  programs        Program[]
-  teachers        Teacher[]
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model students {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roll_number        String               @unique
+  ug_no              String?
+  name               String
+  email              String?
+  department         String?
+  semester           Int?
+  section            String?
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  attendance_records attendance_records[]
+  rfid_cards         rfid_cards[]
 }
 
-model Program {
-  id              String   @id @default(uuid())
-  code            String   @unique
-  name            String
-  departmentId    String
-  department      Department @relation(fields: [departmentId], references: [id])
-  students        Student[]
-}
-
-model AcademicYear {
-  id              String   @id @default(uuid())
-  name            String   @unique // e.g. "2026-2027"
-  startDate       DateTime
-  endDate         DateTime
-  isActive        Boolean  @default(false)
-  semesters       Semester[]
-}
-
-model Semester {
-  id              String   @id @default(uuid())
-  name            String
-  number          Int
-  academicYearId  String
-  academicYear    AcademicYear @relation(fields: [academicYearId], references: [id])
-  
-  students        Student[]
-  courses         Course[]
-  exams           Exam[]
-}
-
-model Section {
-  id              String   @id @default(uuid())
-  name            String   // e.g. "A", "B"
-  students        Student[]
-  timetable       TimetableEntry[]
-  assignments     Assignment[]
-}
-
-model Classroom {
-  id              String   @id @default(uuid())
-  name            String   @unique // e.g. "CSB-5"
-  capacity        Int
-  
-  device          Device?
-  timetable       TimetableEntry[]
-  classSessions   ClassSession[]
-}
-
-model Device {
-  id              String   @id @default(uuid())
-  deviceId        String   @unique // e.g. MAC address or unique name
-  classroomId     String   @unique
-  classroom       Classroom @relation(fields: [classroomId], references: [id])
-  status          DeviceStatus @default(OFFLINE)
-  firmwareVersion String?
-  lastHeartbeat   DateTime?
-  lastEvent       DateTime?
-  wifiRssi        Int?
-  freeHeap        Int?
-}
-
-enum DeviceStatus {
-  ONLINE
-  DEGRADED
-  OFFLINE
-}
-
-model RfidCard {
-  id              String   @id @default(uuid())
-  uid             String   @unique
-  studentId       String   @unique
-  student         Student  @relation(fields: [studentId], references: [id])
-  issuedAt        DateTime @default(now())
-  isActive        Boolean  @default(true)
-}
-
-model BleIdentity {
-  id              String   @id @default(uuid())
-  token           String   @unique
-  studentId       String   @unique
-  student         Student  @relation(fields: [studentId], references: [id])
-  issuedAt        DateTime @default(now())
-  isActive        Boolean  @default(true)
-}
-
-model Course {
-  id              String   @id @default(uuid())
-  code            String   @unique
-  name            String
-  credits         Int
-  semesterId      String
-  semester        Semester @relation(fields: [semesterId], references: [id])
-  teacherId       String
-  teacher         Teacher  @relation(fields: [teacherId], references: [id])
-  
-  enrollments     CourseEnrollment[]
-  timetable       TimetableEntry[]
-  exams           ExamCourse[]
-  assignments     Assignment[]
-  classSessions   ClassSession[]
-}
-
-model CourseEnrollment {
-  id              String   @id @default(uuid())
-  courseId        String
-  course          Course   @relation(fields: [courseId], references: [id])
-  studentId       String
-  student         Student  @relation(fields: [studentId], references: [id])
-  enrolledAt      DateTime @default(now())
-  
-  @@unique([courseId, studentId])
-}
-
-model TimetableEntry {
-  id              String   @id @default(uuid())
-  courseId        String
-  course          Course   @relation(fields: [courseId], references: [id])
-  teacherId       String
-  teacher         Teacher  @relation(fields: [teacherId], references: [id])
-  classroomId     String
-  classroom       Classroom @relation(fields: [classroomId], references: [id])
-  sectionId       String
-  section         Section  @relation(fields: [sectionId], references: [id])
-  dayOfWeek       Int      // 0-6 (Sun-Sat)
-  startTime       String   // "09:00"
-  endTime         String   // "10:00"
-}
-
-model ClassSession {
-  id              String   @id @default(uuid())
-  courseId        String
-  course          Course   @relation(fields: [courseId], references: [id])
-  classroomId     String
-  classroom       Classroom @relation(fields: [classroomId], references: [id])
-  date            DateTime // Date of the session
-  startTime       DateTime
-  endTime         DateTime? // Expected end time
-  actualEndTime   DateTime?
-  status          SessionStatus @default(SCHEDULED)
-  
-  attendanceSessions AttendanceSession[]
-  
-  // Settings for this session
-  requiredDwell   Int      @default(2400) // seconds
-  rssiEnter       Int      @default(-70)
-  rssiExit        Int      @default(-78)
-  gracePeriod     Int      @default(300) // seconds
-}
-
-enum SessionStatus {
-  SCHEDULED
-  ACTIVE
-  PAUSED
-  COMPLETED
-  CANCELLED
-}
-
-model AttendanceSession {
-  id              String   @id @default(uuid())
-  classSessionId  String
-  classSession    ClassSession @relation(fields: [classSessionId], references: [id])
-  studentId       String
-  student         Student  @relation(fields: [studentId], references: [id])
-  
-  state           AttendanceState @default(IDLE)
-  dwellTime       Int      @default(0) // seconds
-  
-  rfidEvents      RfidEvent[]
-  bleObservations BleObservation[]
-  result          AttendanceResult?
-  
-  @@unique([classSessionId, studentId])
-}
-
-enum AttendanceState {
-  IDLE
-  CHECKED_IN
-  MONITORING
-  TEMP_ABSENT
-  VERIFIED
-  UNVERIFIED
-  CLOSED
-  OFFLINE_PENDING
-}
-
-model RfidEvent {
-  id                  String   @id @default(uuid())
-  eventId             String   @unique
-  attendanceSessionId String
-  attendanceSession   AttendanceSession @relation(fields: [attendanceSessionId], references: [id])
-  uid                 String
-  timestamp           DateTime
-}
-
-model BleObservation {
-  id                  String   @id @default(uuid())
-  eventId             String   @unique
-  attendanceSessionId String
-  attendanceSession   AttendanceSession @relation(fields: [attendanceSessionId], references: [id])
-  token               String
-  rssi                Int
-  timestamp           DateTime
-}
-
-model AttendanceResult {
-  id                  String   @id @default(uuid())
-  attendanceSessionId String   @unique
-  attendanceSession   AttendanceSession @relation(fields: [attendanceSessionId], references: [id])
-  studentId           String
-  student             Student  @relation(fields: [studentId], references: [id])
-  status              ResultStatus
-  reason              String?
-  updatedBy           String?  // Admin/Teacher who manually updated it
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-}
-
-enum ResultStatus {
-  PRESENT
-  ABSENT
-  EXCUSED
-}
-
-model Exam {
-  id              String   @id @default(uuid())
-  name            String
-  type            ExamType
-  semesterId      String
-  semester        Semester @relation(fields: [semesterId], references: [id])
-  date            DateTime
-  courses         ExamCourse[]
-}
-
-enum ExamType {
-  MID_SEMESTER
-  END_SEMESTER
-  INTERNAL
-  PRACTICAL
-  QUIZ
-  ASSIGNMENT
-  LAB
-}
-
-model ExamCourse {
-  id              String   @id @default(uuid())
-  examId          String
-  exam            Exam     @relation(fields: [examId], references: [id])
-  courseId        String
-  course          Course   @relation(fields: [courseId], references: [id])
-  maxMarks        Float
-  time            String
-  marks           Mark[]
-  
-  @@unique([examId, courseId])
-}
-
-model Mark {
-  id              String   @id @default(uuid())
-  examCourseId    String
-  examCourse      ExamCourse @relation(fields: [examCourseId], references: [id])
-  studentId       String
-  student         Student  @relation(fields: [studentId], references: [id])
-  obtainedMarks   Float
-  isPublished     Boolean  @default(false)
-  
-  @@unique([examCourseId, studentId])
-}
-
-model Assignment {
-  id              String   @id @default(uuid())
-  title           String
-  description     String
-  courseId        String
-  course          Course   @relation(fields: [courseId], references: [id])
-  sectionId       String
-  section         Section  @relation(fields: [sectionId], references: [id])
-  dueDate         DateTime
-  fileUrl         String?
-  submissions     AssignmentSubmission[]
-  createdAt       DateTime @default(now())
-}
-
-model AssignmentSubmission {
-  id              String   @id @default(uuid())
-  assignmentId    String
-  assignment      Assignment @relation(fields: [assignmentId], references: [id])
-  studentId       String
-  student         Student  @relation(fields: [studentId], references: [id])
-  status          SubmissionStatus @default(PENDING)
-  fileUrl         String?
-  marks           Float?
-  feedback        String?
-  submittedAt     DateTime @default(now())
-  
-  @@unique([assignmentId, studentId])
-}
-
-enum SubmissionStatus {
-  PENDING
-  SUBMITTED
-  LATE
-  REVIEWED
-}
-
-model LeaveRequest {
-  id              String   @id @default(uuid())
-  studentId       String
-  student         Student  @relation(fields: [studentId], references: [id])
-  leaveType       String
-  startDate       DateTime
-  endDate         DateTime
-  reason          String
-  attachmentUrl   String?
-  status          LeaveStatus @default(PENDING)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-
-model Notice {
-  id              String   @id @default(uuid())
-  title           String
-  description     String
-  category        NoticeCategory
-  priority        NoticePriority
-  audience        Role[]
-  publishDate     DateTime
-  expiryDate      DateTime?
-  attachmentUrl   String?
-  createdAt       DateTime @default(now())
-}
-
-enum NoticeCategory {
-  ACADEMIC
-  EXAMINATION
-  ATTENDANCE
-  HOLIDAY
-  GENERAL
-  EMERGENCY
-}
-
-enum NoticePriority {
-  LOW
-  NORMAL
-  HIGH
-}
-
-model Notification {
-  id              String   @id @default(uuid())
-  userId          String
-  title           String
-  message         String
-  isRead          Boolean  @default(false)
-  type            String
-  createdAt       DateTime @default(now())
-}
-
-model AuditLog {
-  id              String   @id @default(uuid())
-  actorId         String
-  action          String
-  entityType      String
-  entityId        String
-  beforeState     String?
-  afterState      String?
-  reason          String?
-  timestamp       DateTime @default(now())
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model subjects {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subject_code        String?               @unique
+  subject_name        String
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  attendance_sessions attendance_sessions[]
 }
