@@ -19,6 +19,22 @@ export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('Dr. Jitendra Kumar');
+
+  const DEMO_TEACHERS = [
+    "Dr. Jitendra Kumar",
+    "Dr. Saran Srihari Sripada Panda",
+    "Dr. Ami Kumar Parida",
+    "ECE Faculty",
+    "Dr. Priyadarshan Parida",
+    "Dr. Biphu Prasad",
+    "Mrs. Swapna Mayee Sahoo",
+    "Dr. Bandana Mallick",
+    "Dr. Manoj Kumar Panda",
+    "Dr. Swapna Mayee Sahoo",
+    "Dr. Ranjita Rout",
+    "Dr. Radhanath Patra"
+  ];
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema)
@@ -124,26 +140,21 @@ export const Login = () => {
       </div>
 
       <div className="space-y-3">
+        <select
+          value={selectedTeacher}
+          onChange={(e) => setSelectedTeacher(e.target.value)}
+          className="w-full h-11 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
+        >
+          {DEMO_TEACHERS.map(teacher => (
+            <option key={teacher} value={teacher}>{teacher}</option>
+          ))}
+        </select>
         <button
           type="button"
-          onClick={() => onSubmit({ email: 'demo_Dr. Jitendra Kumar@rollsync.com', password: 'password123' })}
-          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
+          onClick={() => onSubmit({ email: `demo_${selectedTeacher}@rollsync.com`, password: 'password123' })}
+          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] bg-[#F9FAFB] hover:bg-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
         >
-          Demo: Dr. Jitendra Kumar
-        </button>
-        <button
-          type="button"
-          onClick={() => onSubmit({ email: 'demo_Dr. Saran Srihari Sripada Panda@rollsync.com', password: 'password123' })}
-          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
-        >
-          Demo: Dr. Saran Srihari
-        </button>
-        <button
-          type="button"
-          onClick={() => onSubmit({ email: 'demo_Dr. Ami Kumar Parida@rollsync.com', password: 'password123' })}
-          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
-        >
-          Demo: Dr. Ami Kumar Parida
+          Demo Login as Teacher
         </button>
       </div>
     </form>
