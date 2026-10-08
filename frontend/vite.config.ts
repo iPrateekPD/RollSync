@@ -8,16 +8,9 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/supabase-api': {
-        target: 'https://myeykshozowozsjapokt.supabase.co',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/supabase-api/, ''),
-        headers: {
-          // Bypass Supabase browser secret key block
-          'Origin': 'https://myeykshozowozsjapokt.supabase.co',
-          'Referer': 'https://myeykshozowozsjapokt.supabase.co',
-          'User-Agent': 'Node.js'
-        }
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true
       }
     }
   }

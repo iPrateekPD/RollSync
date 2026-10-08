@@ -34,7 +34,7 @@ export const TeacherDashboard = () => {
             <div className="text-[13px] text-[#667085]">9:02 AM</div>
           </div>
           <div className="h-10 w-[1px] bg-[#E5E7EB]"></div>
-          <button className="flex items-center gap-2 h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#F8F9FC] transition-colors">
+          <button className="flex items-center gap-2 h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#FFFFFF] transition-colors">
             VIII-B
             <ChevronDown className="w-4 h-4 text-[#667085]" />
           </button>
@@ -94,7 +94,7 @@ export const TeacherDashboard = () => {
         </div>
         <Link 
           to="/teacher/attendance" 
-          className="inline-flex items-center justify-center gap-2 h-12 px-8 bg-[#4338CA] hover:bg-[#3730A3] text-white rounded-[12px] font-medium text-[15px] transition-colors shrink-0"
+          className="inline-flex items-center justify-center gap-2 h-12 px-8 bg-[#0B65FE] hover:bg-[#004BCC] text-white rounded-[12px] font-medium text-[15px] transition-colors shrink-0"
         >
           Take Attendance
           <ArrowRight className="w-5 h-5" />
@@ -122,7 +122,7 @@ export const TeacherDashboard = () => {
                 : student.name.substring(0, 2).toUpperCase();
 
               return (
-                <div key={student.id} className="p-4 flex items-center justify-between hover:bg-[#F8F9FC] transition-colors">
+                <div key={student.id} className="p-4 flex items-center justify-between hover:bg-[#FFFFFF] transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[14px] font-medium text-[#111827]">
                       {initials}
@@ -144,7 +144,7 @@ export const TeacherDashboard = () => {
           </div>
           
           <div className="p-4 border-t border-[#E5E7EB] bg-[#F9FAFB] text-center">
-            <Link to="/teacher/reports" className="text-[14px] font-medium text-[#4338CA] hover:text-[#3730A3] transition-colors">
+            <Link to="/teacher/reports" className="text-[14px] font-medium text-[#0B65FE] hover:text-[#004BCC] transition-colors">
               View full activity
             </Link>
           </div>

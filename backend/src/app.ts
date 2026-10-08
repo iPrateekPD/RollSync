@@ -5,6 +5,7 @@ import helmet from 'helmet';
 // Route imports
 import healthRoutes from './routes/health';
 import sessionsRoutes from './routes/sessions';
+import studentsRoutes from './routes/students';
 
 import authRoutes from './routes/auth';
 
@@ -20,11 +21,10 @@ const apiRouter = express.Router();
 
 apiRouter.use('/health', healthRoutes);
 apiRouter.use('/sessions', sessionsRoutes);
+apiRouter.use('/students', studentsRoutes);
 apiRouter.use('/auth', authRoutes);
 
 // Mock routes for definition of done
-apiRouter.get('/students', (req, res) => res.json([]));
-apiRouter.get('/students/:id', (req, res) => res.json({}));
 apiRouter.get('/attendance', (req, res) => res.json([]));
 apiRouter.get('/attendance/today', (req, res) => res.json([]));
 apiRouter.get('/devices', (req, res) => res.json([]));

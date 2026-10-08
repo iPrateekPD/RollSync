@@ -29,7 +29,7 @@ export const Settings = () => {
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none"
+                className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#0B65FE] focus:outline-none"
               />
             </div>
             <div>
@@ -39,12 +39,12 @@ export const Settings = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter new password"
-                className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#4338CA] focus:outline-none"
+                className="w-full h-10 px-3 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] text-[#111827] focus:ring-2 focus:ring-[#0B65FE] focus:outline-none"
               />
             </div>
             <button 
               onClick={handleSave}
-              className="flex items-center gap-2 h-10 px-4 bg-[#4338CA] hover:bg-[#3730A3] text-white rounded-[10px] font-medium text-[14px] transition-colors shadow-sm"
+              className="flex items-center gap-2 h-10 px-4 bg-[#0B65FE] hover:bg-[#004BCC] text-white rounded-[10px] font-medium text-[14px] transition-colors shadow-sm"
             >
               {saved ? <><Check className="w-4 h-4"/> Saved</> : 'Save Changes'}
             </button>

@@ -24,11 +24,11 @@ export const Reports = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#F8F9FC] transition-colors">
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#FFFFFF] transition-colors">
             <Calendar className="w-4 h-4 text-[#667085]" />
             Last 30 Days
           </button>
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-4 bg-[#4338CA] hover:bg-[#3730A3] text-white rounded-[10px] font-medium text-[14px] transition-colors">
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-4 bg-[#0B65FE] hover:bg-[#004BCC] text-white rounded-[10px] font-medium text-[14px] transition-colors">
             <Download className="w-4 h-4" />
             Export CSV
           </button>
@@ -39,7 +39,7 @@ export const Reports = () => {
         <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-subtle flex flex-col justify-between h-[140px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[#667085]">
-              <FileText className="w-4 h-4 text-[#4338CA]" />
+              <FileText className="w-4 h-4 text-[#0B65FE]" />
               <h3 className="text-[14px] font-medium">Average Attendance</h3>
             </div>
           </div>
@@ -54,7 +54,7 @@ export const Reports = () => {
 
         <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-subtle flex flex-col justify-between h-[140px]">
           <div className="flex items-center gap-2 text-[#667085]">
-            <FileText className="w-4 h-4 text-[#4338CA]" />
+            <FileText className="w-4 h-4 text-[#0B65FE]" />
             <h3 className="text-[14px] font-medium">Total Absences</h3>
           </div>
           <div className="flex items-baseline gap-2 mt-4">
@@ -68,7 +68,7 @@ export const Reports = () => {
 
         <div className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-subtle flex flex-col justify-between h-[140px]">
           <div className="flex items-center gap-2 text-[#667085]">
-            <FileText className="w-4 h-4 text-[#4338CA]" />
+            <FileText className="w-4 h-4 text-[#0B65FE]" />
             <h3 className="text-[14px] font-medium">Leave Requests</h3>
           </div>
           <div className="flex items-baseline gap-2 mt-4">
@@ -86,10 +86,10 @@ export const Reports = () => {
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#667085', fontSize: 13 }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: '#667085', fontSize: 13 }} />
               <Tooltip 
-                cursor={{ fill: '#F8F9FC' }}
+                cursor={{ fill: '#FFFFFF' }}
                 contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
               />
-              <Bar dataKey="present" name="Present" fill="#4338CA" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              <Bar dataKey="present" name="Present" fill="#0B65FE" radius={[4, 4, 0, 0]} maxBarSize={40} />
               <Bar dataKey="absent" name="Absent" fill="#FEE2E2" radius={[4, 4, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>

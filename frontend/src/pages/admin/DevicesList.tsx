@@ -12,8 +12,8 @@ export const DevicesList = () => {
         <div className="bg-white p-6 rounded-[20px] shadow-subtle border border-[#E5E7EB]">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#EEEDFA] flex items-center justify-center">
-                <RadioReceiver className="w-5 h-5 text-[#4338CA]" />
+              <div className="w-10 h-10 rounded-full bg-[#E5F0FF] flex items-center justify-center">
+                <RadioReceiver className="w-5 h-5 text-[#0B65FE]" />
               </div>
               <div>
                 <h3 className="text-[16px] font-medium text-[#111827]">ESP32-S3 (CSB-5)</h3>

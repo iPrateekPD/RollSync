@@ -1,26 +1,43 @@
-const SUPABASE_URL = '/supabase-api';
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_SECRET_KEY;
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const fetchStudentsFromDB = async (limit?: number, orderAsc?: boolean) => {
-  let url = `${SUPABASE_URL}/rest/v1/students?select=*`;
+  let url = `${API_URL}/students?`;
   
   if (orderAsc !== undefined) {
-    url += `&order=roll_number.${orderAsc ? 'asc' : 'desc'}`;
+    url += `orderAsc=${orderAsc}&`;
   }
   if (limit !== undefined) {
-    url += `&limit=${limit}`;
+    url += `limit=${limit}`;
   }
 
   const res = await fetch(url, {
     headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`
+      'Content-Type': 'application/json'
     }
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    return { data: null, error: new Error(err) };
+    const errData = await res.json().catch(() => ({}));
+    return { data: null, error: new Error(errData.error || 'Failed to fetch students') };
+  }
+
+  const data = await res.json();
+  return { data, error: null };
+};
+
+export const insertStudentToDB = async (studentData: any) => {
+  const url = `${API_URL}/students`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(studentData)
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    return { data: null, error: new Error(errData.error || 'Failed to insert student') };
   }
 
   const data = await res.json();

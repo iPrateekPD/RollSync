@@ -69,7 +69,7 @@ export const Login = () => {
           {...register('email')}
           type="email"
           placeholder="teacher@rollsync.com"
-          className="w-full h-11 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[15px] placeholder:text-[#667085] focus:outline-none focus:ring-2 focus:ring-[#4338CA] focus:border-transparent transition-shadow shadow-sm"
+          className="w-full h-11 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[15px] placeholder:text-[#667085] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] focus:border-transparent transition-shadow shadow-sm"
         />
         {errors.email && (
           <p className="mt-1.5 text-[13px] text-[#EF4444]">{errors.email.message}</p>
@@ -82,7 +82,7 @@ export const Login = () => {
           {...register('password')}
           type="password"
           placeholder="••••••••"
-          className="w-full h-11 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[15px] placeholder:text-[#667085] focus:outline-none focus:ring-2 focus:ring-[#4338CA] focus:border-transparent transition-shadow shadow-sm"
+          className="w-full h-11 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[15px] placeholder:text-[#667085] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] focus:border-transparent transition-shadow shadow-sm"
         />
         {errors.password && (
           <p className="mt-1.5 text-[13px] text-[#EF4444]">{errors.password.message}</p>
@@ -91,10 +91,10 @@ export const Login = () => {
 
       <div className="flex items-center justify-between pt-1">
         <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" className="w-4 h-4 rounded border-[#E5E7EB] text-[#4338CA] focus:ring-[#4338CA]" />
+          <input type="checkbox" className="w-4 h-4 rounded border-[#E5E7EB] text-[#0B65FE] focus:ring-[#0B65FE]" />
           <span className="text-[14px] text-[#667085] group-hover:text-[#111827] transition-colors">Remember me</span>
         </label>
-        <a href="#" className="text-[14px] font-medium text-[#4338CA] hover:text-[#3730A3] transition-colors">
+        <a href="#" className="text-[14px] font-medium text-[#0B65FE] hover:text-[#004BCC] transition-colors">
           Forgot password?
         </a>
       </div>
@@ -103,7 +103,7 @@ export const Login = () => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[15px] font-medium text-white bg-[#4338CA] hover:bg-[#3730A3] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4338CA] disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[15px] font-medium text-white bg-[#0B65FE] hover:bg-[#004BCC] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B65FE] disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -126,7 +126,7 @@ export const Login = () => {
         <button
           type="button"
           onClick={() => onSubmit({ email: 'teacher@rollsync.com', password: 'password123' })}
-          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[15px] font-medium text-[#111827] bg-white hover:bg-[#F8F9FC] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4338CA] transition-colors"
+          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[15px] font-medium text-[#111827] bg-white hover:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B65FE] transition-colors"
         >
           One-Click Teacher Demo
         </button>

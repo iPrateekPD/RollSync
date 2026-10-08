@@ -7,7 +7,7 @@
 
 @layer base {
   :root {
-    --background: 228 33% 97%; /* #F8F9FC */
+    --background: 228 33% 97%; /* #FFFFFF */
     --foreground: 222 47% 11%; /* #111827 */
     
     --card: 0 0% 100%; /* #FFFFFF */
@@ -18,7 +18,7 @@
 
     --border: 220 13% 91%; /* #E5E7EB */
     --input: 220 13% 91%;
-    --ring: 244 58% 51%; /* #4338CA */
+    --ring: 244 58% 51%; /* #0B65FE */
 
     --radius: 0.5rem;
   }
@@ -29,7 +29,7 @@
     @apply border-[hsl(var(--border))];
   }
   body {
-    @apply bg-[#F8F9FC] text-[#111827] antialiased;
+    @apply bg-[#FFFFFF] text-[#111827] antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   h1, h2, h3, h4, h5, h6 {

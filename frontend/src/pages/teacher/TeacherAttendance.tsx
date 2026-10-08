@@ -36,7 +36,7 @@ export const TeacherAttendance = () => {
         </div>
         <button 
           onClick={() => setManualEntryOpen(true)}
-          className="h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#F8F9FC] transition-colors self-start sm:self-auto"
+          className="h-10 px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#FFFFFF] transition-colors self-start sm:self-auto"
         >
           Manual Entry
         </button>
@@ -46,10 +46,10 @@ export const TeacherAttendance = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111827]/40 backdrop-blur-sm">
           <div className="bg-white rounded-[20px] p-6 w-full max-w-md shadow-2xl animate-in zoom-in-95">
             <h2 className="text-[20px] font-semibold text-[#111827] mb-4">Manual Entry</h2>
-            <input type="text" placeholder="Enter student roll number..." className="w-full h-10 px-3 border border-[#E5E7EB] rounded-[10px] text-[14px] mb-4 focus:ring-2 focus:ring-[#4338CA] focus:outline-none" />
+            <input type="text" placeholder="Enter student roll number..." className="w-full h-10 px-3 border border-[#E5E7EB] rounded-[10px] text-[14px] mb-4 focus:ring-2 focus:ring-[#0B65FE] focus:outline-none" />
             <div className="flex justify-end gap-3">
               <button onClick={() => setManualEntryOpen(false)} className="h-10 px-4 rounded-[10px] text-[14px] font-medium text-[#111827] hover:bg-[#F3F4F6]">Cancel</button>
-              <button onClick={() => { setManualEntryOpen(false); setScanning(false); }} className="h-10 px-4 bg-[#4338CA] text-white rounded-[10px] text-[14px] font-medium hover:bg-[#3730A3]">Mark Present</button>
+              <button onClick={() => { setManualEntryOpen(false); setScanning(false); }} className="h-10 px-4 bg-[#0B65FE] text-white rounded-[10px] text-[14px] font-medium hover:bg-[#004BCC]">Mark Present</button>
             </div>
           </div>
         </div>
@@ -60,8 +60,8 @@ export const TeacherAttendance = () => {
         
         {/* Device Status Corner */}
         <div className="absolute top-6 left-6 flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#EEEDFA] flex items-center justify-center shrink-0">
-            <Radio className="w-5 h-5 text-[#4338CA]" />
+          <div className="w-10 h-10 rounded-full bg-[#E5F0FF] flex items-center justify-center shrink-0">
+            <Radio className="w-5 h-5 text-[#0B65FE]" />
           </div>
           <div>
             <div className="text-[14px] font-semibold text-[#111827]">ESP32-S3 (CSB-5)</div>
@@ -78,9 +78,9 @@ export const TeacherAttendance = () => {
           {scanning ? (
             <>
               <div className="relative w-24 h-24 mb-6">
-                <div className="absolute inset-0 bg-[#4338CA] opacity-10 rounded-full animate-ping"></div>
-                <div className="absolute inset-2 bg-[#4338CA] opacity-20 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
-                <div className="absolute inset-4 bg-[#4338CA] text-white rounded-full flex items-center justify-center shadow-lg">
+                <div className="absolute inset-0 bg-[#0B65FE] opacity-10 rounded-full animate-ping"></div>
+                <div className="absolute inset-2 bg-[#0B65FE] opacity-20 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
+                <div className="absolute inset-4 bg-[#0B65FE] text-white rounded-full flex items-center justify-center shadow-lg">
                   <Radio className="w-8 h-8" />
                 </div>
               </div>
@@ -103,7 +103,7 @@ export const TeacherAttendance = () => {
               
               <button 
                 onClick={() => setScanning(true)}
-                className="mt-8 text-[14px] font-medium text-[#4338CA] hover:text-[#3730A3]"
+                className="mt-8 text-[14px] font-medium text-[#0B65FE] hover:text-[#004BCC]"
               >
                 Scan Next Student
               </button>

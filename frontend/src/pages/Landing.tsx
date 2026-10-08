@@ -14,11 +14,9 @@ export const Landing = () => {
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-[#E5E7EB]">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#4338CA] rounded-[10px] flex items-center justify-center">
-              <ScanLine className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[20px] font-semibold tracking-tight">RollSync</span>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="RollSync Logo" className="h-10 w-auto object-contain rounded-full shadow-sm" />
+            <span className="text-[22px] font-semibold tracking-tight">RollSync</span>
           </div>
           <nav className="hidden md:flex space-x-8">
             <a href="#product" className="text-[15px] font-medium text-[#667085] hover:text-[#111827] transition-colors">Product</a>
@@ -30,7 +28,7 @@ export const Landing = () => {
           <div>
             <Link 
               to="/login"
-              className="inline-flex items-center justify-center h-10 px-6 rounded-[10px] font-medium text-[14px] text-white bg-[#4338CA] hover:bg-[#3730A3] transition-colors"
+              className="inline-flex items-center justify-center h-10 px-6 rounded-[10px] font-medium text-[14px] text-white bg-[#0B65FE] hover:bg-[#004BCC] transition-colors"
             >
               Get Started
             </Link>
@@ -42,8 +40,8 @@ export const Landing = () => {
         
         {/* HERO */}
         <section className="pt-32 pb-24 px-6 lg:px-10 max-w-[1440px] mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EEEDFA] text-[#4338CA] text-[13px] font-medium mb-8">
-            <span className="w-2 h-2 rounded-full bg-[#4338CA]"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E5F0FF] text-[#0B65FE] text-[13px] font-medium mb-8">
+            <span className="w-2 h-2 rounded-full bg-[#0B65FE]"></span>
             Now supporting ESP32-S3 IoT Hardware
           </div>
           <h1 className="text-[56px] lg:text-[72px] font-semibold tracking-tight leading-[1.1] mb-6 max-w-4xl mx-auto">
@@ -55,13 +53,13 @@ export const Landing = () => {
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
             <Link
               to="/login"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-[12px] font-medium text-[16px] text-white bg-[#4338CA] hover:bg-[#3730A3] transition-colors w-full sm:w-auto"
+              className="inline-flex items-center justify-center h-12 px-8 rounded-[12px] font-medium text-[16px] text-white bg-[#0B65FE] hover:bg-[#004BCC] transition-colors w-full sm:w-auto"
             >
               Get Started
             </Link>
             <a
               href="#how-it-works"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-[12px] font-medium text-[16px] text-[#111827] bg-white border border-[#E5E7EB] hover:bg-[#F8F9FC] transition-colors w-full sm:w-auto gap-2"
+              className="inline-flex items-center justify-center h-12 px-8 rounded-[12px] font-medium text-[16px] text-[#111827] bg-white border border-[#E5E7EB] hover:bg-[#FFFFFF] transition-colors w-full sm:w-auto gap-2"
             >
               See How It Works
               <ChevronRight className="w-4 h-4 text-[#667085]" />
@@ -70,7 +68,7 @@ export const Landing = () => {
         </section>
 
         {/* HOW IT WORKS */}
-        <section id="how-it-works" className="py-24 bg-[#F8F9FC]">
+        <section id="how-it-works" className="py-24 bg-[#FFFFFF]">
           <div className="max-w-[1440px] mx-auto px-6 lg:px-10">
             <div className="text-center mb-16">
               <h2 className="text-[36px] font-semibold tracking-tight mb-4">How it works</h2>
@@ -80,35 +78,35 @@ export const Landing = () => {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-white rounded-[16px] border border-[#E5E7EB] flex items-center justify-center shadow-subtle mb-6">
-                  <Radio className="w-7 h-7 text-[#4338CA]" />
+                  <Radio className="w-7 h-7 text-[#0B65FE]" />
                 </div>
                 <h3 className="text-[18px] font-medium mb-2">1. Connect</h3>
                 <p className="text-[14px] text-[#667085]">Connect the RollSync attendance device.</p>
               </div>
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-white rounded-[16px] border border-[#E5E7EB] flex items-center justify-center shadow-subtle mb-6">
-                  <ScanLine className="w-7 h-7 text-[#4338CA]" />
+                  <ScanLine className="w-7 h-7 text-[#0B65FE]" />
                 </div>
                 <h3 className="text-[18px] font-medium mb-2">2. Scan</h3>
                 <p className="text-[14px] text-[#667085]">Students tap their RFID cards.</p>
               </div>
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-white rounded-[16px] border border-[#E5E7EB] flex items-center justify-center shadow-subtle mb-6">
-                  <RefreshCw className="w-7 h-7 text-[#4338CA]" />
+                  <RefreshCw className="w-7 h-7 text-[#0B65FE]" />
                 </div>
                 <h3 className="text-[18px] font-medium mb-2">3. Sync</h3>
                 <p className="text-[14px] text-[#667085]">Attendance is synced instantly over Wi-Fi.</p>
               </div>
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-white rounded-[16px] border border-[#E5E7EB] flex items-center justify-center shadow-subtle mb-6">
-                  <BarChart2 className="w-7 h-7 text-[#4338CA]" />
+                  <BarChart2 className="w-7 h-7 text-[#0B65FE]" />
                 </div>
                 <h3 className="text-[18px] font-medium mb-2">4. Analyze</h3>
                 <p className="text-[14px] text-[#667085]">Teachers view attendance analytics.</p>
               </div>
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-white rounded-[16px] border border-[#E5E7EB] flex items-center justify-center shadow-subtle mb-6">
-                  <FileText className="w-7 h-7 text-[#4338CA]" />
+                  <FileText className="w-7 h-7 text-[#0B65FE]" />
                 </div>
                 <h3 className="text-[18px] font-medium mb-2">5. Report</h3>
                 <p className="text-[14px] text-[#667085]">Generate and export attendance reports.</p>
@@ -127,32 +125,32 @@ export const Landing = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="p-8 rounded-[20px] border border-[#E5E7EB] hover:shadow-subtle transition-shadow">
-                <ScanLine className="w-8 h-8 text-[#4338CA] mb-6" />
+                <ScanLine className="w-8 h-8 text-[#0B65FE] mb-6" />
                 <h3 className="text-[20px] font-medium mb-3">RFID Attendance</h3>
                 <p className="text-[15px] text-[#667085] leading-relaxed">Fast, contact-free check-ins using secure RFID technology integrated with IoT devices.</p>
               </div>
               <div className="p-8 rounded-[20px] border border-[#E5E7EB] hover:shadow-subtle transition-shadow">
-                <UserCheck className="w-8 h-8 text-[#4338CA] mb-6" />
+                <UserCheck className="w-8 h-8 text-[#0B65FE] mb-6" />
                 <h3 className="text-[20px] font-medium mb-3">Student Management</h3>
                 <p className="text-[15px] text-[#667085] leading-relaxed">Maintain comprehensive records of students, rolls, classes, and individual histories.</p>
               </div>
               <div className="p-8 rounded-[20px] border border-[#E5E7EB] hover:shadow-subtle transition-shadow">
-                <BarChart2 className="w-8 h-8 text-[#4338CA] mb-6" />
+                <BarChart2 className="w-8 h-8 text-[#0B65FE] mb-6" />
                 <h3 className="text-[20px] font-medium mb-3">Attendance Analytics</h3>
                 <p className="text-[15px] text-[#667085] leading-relaxed">Visualize trends, daily percentages, and long-term data for actionable insights.</p>
               </div>
               <div className="p-8 rounded-[20px] border border-[#E5E7EB] hover:shadow-subtle transition-shadow">
-                <FileText className="w-8 h-8 text-[#4338CA] mb-6" />
+                <FileText className="w-8 h-8 text-[#0B65FE] mb-6" />
                 <h3 className="text-[20px] font-medium mb-3">Reports</h3>
                 <p className="text-[15px] text-[#667085] leading-relaxed">Export detailed PDF and CSV reports for administrative reviews and compliance.</p>
               </div>
               <div className="p-8 rounded-[20px] border border-[#E5E7EB] hover:shadow-subtle transition-shadow">
-                <Calendar className="w-8 h-8 text-[#4338CA] mb-6" />
+                <Calendar className="w-8 h-8 text-[#0B65FE] mb-6" />
                 <h3 className="text-[20px] font-medium mb-3">Leave Management</h3>
                 <p className="text-[15px] text-[#667085] leading-relaxed">Streamlined leave request submissions and teacher approvals directly in the app.</p>
               </div>
               <div className="p-8 rounded-[20px] border border-[#E5E7EB] hover:shadow-subtle transition-shadow">
-                <Radio className="w-8 h-8 text-[#4338CA] mb-6" />
+                <Radio className="w-8 h-8 text-[#0B65FE] mb-6" />
                 <h3 className="text-[20px] font-medium mb-3">Device Monitoring</h3>
                 <p className="text-[15px] text-[#667085] leading-relaxed">Monitor MQTT connectivity, Wi-Fi status, and hardware health in real-time.</p>
               </div>
@@ -176,7 +174,7 @@ export const Landing = () => {
           <h2 className="text-[40px] font-semibold tracking-tight mb-8">Ready to simplify attendance?</h2>
           <Link
             to="/login"
-            className="inline-flex items-center justify-center h-14 px-10 rounded-[12px] font-medium text-[16px] text-white bg-[#4338CA] hover:bg-[#3730A3] transition-colors"
+            className="inline-flex items-center justify-center h-14 px-10 rounded-[12px] font-medium text-[16px] text-white bg-[#0B65FE] hover:bg-[#004BCC] transition-colors"
           >
             Get Started
           </Link>
@@ -186,11 +184,9 @@ export const Landing = () => {
       {/* FOOTER */}
       <footer className="border-t border-[#E5E7EB] py-12">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-10 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#4338CA] rounded-[6px] flex items-center justify-center">
-              <ScanLine className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-[16px] font-semibold">RollSync</span>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="RollSync Logo" className="h-8 w-auto object-contain rounded-full shadow-sm" />
+            <span className="text-[18px] font-semibold">RollSync</span>
           </div>
           
           <div className="flex flex-wrap justify-center gap-8 text-[14px] text-[#667085] font-medium">

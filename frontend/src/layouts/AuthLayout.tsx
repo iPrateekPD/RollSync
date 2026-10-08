@@ -5,15 +5,13 @@ export const AuthLayout = () => {
   return (
     <div className="min-h-screen bg-white flex font-sans text-[#111827]">
       {/* Left Panel */}
-      <div className="hidden lg:flex flex-1 bg-[#F8F9FC] flex-col justify-between p-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-[#FFFFFF] flex-col justify-between p-12 relative overflow-hidden">
         {/* Background decorative element - very subtle */}
-        <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[600px] h-[600px] bg-[#EEEDFA] rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[600px] h-[600px] bg-[#E5F0FF] rounded-full blur-3xl opacity-50 pointer-events-none"></div>
         
-        <div className="relative z-10 flex items-center gap-2">
-          <div className="w-10 h-10 bg-[#4338CA] rounded-[12px] flex items-center justify-center">
-            <ScanLine className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-[24px] font-semibold tracking-tight">RollSync</span>
+        <div className="relative z-10 flex items-center gap-3">
+          <img src="/logo.png" alt="RollSync Logo" className="h-16 w-auto object-contain rounded-full shadow-sm" />
+          <span className="text-[28px] font-semibold tracking-tight">RollSync</span>
         </div>
 
         <div className="relative z-10 max-w-md">
@@ -34,11 +32,9 @@ export const AuthLayout = () => {
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-24 xl:px-32 relative">
         <div className="w-full max-w-sm mx-auto">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-10">
-            <div className="w-8 h-8 bg-[#4338CA] rounded-[10px] flex items-center justify-center">
-              <ScanLine className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[20px] font-semibold tracking-tight">RollSync</span>
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+            <img src="/logo.png" alt="RollSync Logo" className="h-12 w-auto object-contain rounded-full shadow-sm" />
+            <span className="text-[24px] font-semibold tracking-tight">RollSync</span>
           </div>
 
           <h2 className="text-[28px] font-semibold tracking-tight mb-2">Welcome back</h2>

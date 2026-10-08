@@ -55,7 +55,7 @@ export const DashboardLayout = () => {
   const navItems = getNavItems();
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] flex font-sans text-[#111827]">
+    <div className="min-h-screen bg-[#FFFFFF] flex font-sans text-[#111827]">
       {/* Mobile sidebar backdrop */}
       {isSidebarOpen && (
         <div 
@@ -71,11 +71,9 @@ export const DashboardLayout = () => {
       )}>
         {/* Logo */}
         <div className="h-[72px] flex items-center px-6 border-b border-transparent shrink-0">
-          <div className="flex items-center gap-2 text-[#111827]">
-            <div className="w-8 h-8 bg-primary rounded-[10px] flex items-center justify-center">
-              <ScanLine className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[20px] font-semibold tracking-tight">
+          <div className="flex items-center gap-3 text-[#111827]">
+            <img src="/logo.png" alt="RollSync Logo" className="h-10 w-auto object-contain rounded-full shadow-sm" />
+            <span className="text-[22px] font-semibold tracking-tight">
               RollSync
             </span>
           </div>
@@ -90,7 +88,7 @@ export const DashboardLayout = () => {
               className={({ isActive }) => cn(
                 "flex items-center px-[12px] py-[10px] text-[14px] font-medium rounded-lg transition-colors group",
                 isActive 
-                  ? "bg-[#EEEDFA] text-[#4338CA]" 
+                  ? "bg-[#E5F0FF] text-[#0B65FE]" 
                   : "text-[#667085] hover:bg-[#F3F4F6] hover:text-[#111827]"
               )}
               onClick={() => setIsSidebarOpen(false)}
@@ -106,7 +104,7 @@ export const DashboardLayout = () => {
 
         {/* Device Status */}
         <div className="p-4 mt-auto">
-          <div className="bg-[#F8F9FC] p-4 rounded-xl border border-[#E5E7EB]">
+          <div className="bg-[#FFFFFF] p-4 rounded-xl border border-[#E5E7EB]">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-[#10B981]"></div>
               <span className="text-[13px] font-semibold text-[#111827]">Device Online</span>
@@ -151,7 +149,7 @@ export const DashboardLayout = () => {
               <input 
                 type="text" 
                 placeholder="Search students, roll number..." 
-                className="w-full h-10 pl-10 pr-4 bg-[#F3F4F6] border-none rounded-[10px] text-[14px] text-[#111827] placeholder:text-[#667085] focus:ring-2 focus:ring-[#4338CA] focus:outline-none transition-shadow"
+                className="w-full h-10 pl-10 pr-4 bg-[#F3F4F6] border-none rounded-[10px] text-[14px] text-[#111827] placeholder:text-[#667085] focus:ring-2 focus:ring-[#0B65FE] focus:outline-none transition-shadow"
               />
             </div>
           </div>
@@ -168,7 +166,7 @@ export const DashboardLayout = () => {
             {isNotificationsOpen && (
               <div className="absolute top-12 right-12 w-[320px] bg-white border border-[#E5E7EB] rounded-[16px] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
                 <h3 className="font-semibold text-[#111827] mb-2">Notifications</h3>
-                <div className="text-[14px] text-[#667085] p-4 text-center bg-[#F8F9FC] rounded-[10px]">No new notifications.</div>
+                <div className="text-[14px] text-[#667085] p-4 text-center bg-[#FFFFFF] rounded-[10px]">No new notifications.</div>
               </div>
             )}
             
@@ -177,12 +175,12 @@ export const DashboardLayout = () => {
               onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); }}
             >
               <div className="flex flex-col items-end">
-                <span className="text-[14px] font-medium text-[#111827] group-hover:text-[#4338CA] transition-colors">
+                <span className="text-[14px] font-medium text-[#111827] group-hover:text-[#0B65FE] transition-colors">
                   {user?.firstName ? `${user.firstName} ${user.lastName}` : (user?.email || 'Reema Angelin')}
                 </span>
                 <span className="text-[12px] text-[#667085]">{user?.role || 'Teacher'}</span>
               </div>
-              <div className="w-10 h-10 rounded-[10px] bg-[#EEEDFA] text-[#4338CA] flex items-center justify-center font-medium text-[14px] group-hover:bg-[#4338CA] group-hover:text-white transition-colors">
+              <div className="w-10 h-10 rounded-[10px] bg-[#E5F0FF] text-[#0B65FE] flex items-center justify-center font-medium text-[14px] group-hover:bg-[#0B65FE] group-hover:text-white transition-colors">
                 {user?.firstName?.[0] || user?.email?.[0].toUpperCase() || 'R'}
               </div>
             </div>
