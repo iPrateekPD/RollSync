@@ -29,13 +29,14 @@ export const Login = () => {
       setError(null);
       
       // Mock login for demo purposes
-      if (data.email === 'teacher@rollsync.com' && data.password === 'password123') {
+      if (data.email.startsWith('demo_')) {
+        const teacherName = data.email.replace('demo_', '').replace('@rollsync.com', '');
         const mockUser = {
-          id: 'mock-teacher-1',
-          email: 'teacher@rollsync.com',
+          id: `mock-${teacherName}`,
+          email: data.email,
           role: 'TEACHER' as const,
-          firstName: 'Dr. Jitendra',
-          lastName: 'Kumar'
+          firstName: teacherName.split(' ').slice(0, -1).join(' '),
+          lastName: teacherName.split(' ').slice(-1)[0]
         };
         login('mock-access-token', 'mock-refresh-token', mockUser);
         navigate('/teacher', { replace: true });
@@ -122,13 +123,27 @@ export const Login = () => {
         </div>
       </div>
 
-      <div>
+      <div className="space-y-3">
         <button
           type="button"
-          onClick={() => onSubmit({ email: 'teacher@rollsync.com', password: 'password123' })}
-          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[15px] font-medium text-[#111827] bg-white hover:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B65FE] transition-colors"
+          onClick={() => onSubmit({ email: 'demo_Dr. Jitendra Kumar@rollsync.com', password: 'password123' })}
+          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
         >
-          One-Click Teacher Demo
+          Demo: Dr. Jitendra Kumar
+        </button>
+        <button
+          type="button"
+          onClick={() => onSubmit({ email: 'demo_Dr. Saran Srihari Sripada Panda@rollsync.com', password: 'password123' })}
+          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
+        >
+          Demo: Dr. Saran Srihari
+        </button>
+        <button
+          type="button"
+          onClick={() => onSubmit({ email: 'demo_Dr. Ami Kumar Parida@rollsync.com', password: 'password123' })}
+          className="w-full flex justify-center items-center h-11 px-4 border border-[#E5E7EB] rounded-[10px] text-[14px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
+        >
+          Demo: Dr. Ami Kumar Parida
         </button>
       </div>
     </form>
