@@ -156,6 +156,22 @@ export const Login = () => {
         >
           Demo Login as Teacher
         </button>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => onSubmit({ email: 'student@rollsync.com', password: 'password123' })}
+            className="flex-1 flex justify-center items-center h-10 px-4 border border-[#E5E7EB] rounded-[10px] text-[13px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
+          >
+            Demo as Student
+          </button>
+          <button
+            type="button"
+            onClick={() => onSubmit({ email: 'admin@rollsync.com', password: 'password123' })}
+            className="flex-1 flex justify-center items-center h-10 px-4 border border-[#E5E7EB] rounded-[10px] text-[13px] font-medium text-[#111827] bg-white hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#0B65FE] transition-colors"
+          >
+            Demo as Admin
+          </button>
+        </div>
       </div>
     </form>
   );
