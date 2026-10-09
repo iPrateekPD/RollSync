@@ -100,7 +100,7 @@ export const StudentsList = () => {
             setTrainingStatus('capturing');
           }
         })
-        .catch(err => {
+        .catch(() => {
           setTrainingError("Camera access denied or unavailable.");
           setTrainingStatus('error');
         });

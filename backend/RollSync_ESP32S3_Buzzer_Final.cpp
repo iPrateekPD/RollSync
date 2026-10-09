@@ -57,9 +57,9 @@ const unsigned long RFID_COOLDOWN = 1500;
 // BUZZER
 // ============================================================
 void beepOnCardDetected() {
-  digitalWrite(BUZZER_PIN, LOW);   // Buzzer ON
-  delay(100);
-  digitalWrite(BUZZER_PIN, HIGH);  // Buzzer OFF
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(BUZZER_BEEP_MS);
+  digitalWrite(BUZZER_PIN, LOW);
 }
 
 // ============================================================
@@ -645,8 +645,8 @@ void setup() {
   Serial.println("############################################");
 
   // Active buzzer output starts OFF.
-  digitalWrite(BUZZER_PIN, HIGH);  // Keep buzzer OFF initially
   pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
 
   // Wi-Fi power saving OFF.
   WiFi.setSleep(false);
@@ -748,4 +748,3 @@ void loop() {
 
   delay(300);
 }
-

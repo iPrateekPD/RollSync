@@ -68,7 +68,7 @@ export const setupMqtt = () => {
       await AttendanceService.updateDeviceStatus(deviceIdStr, 'online');
 
       // Process tap
-      await AttendanceService.processRfidTap(uid, deviceClassroom, deviceIdStr, eventTimestamp);
+      await AttendanceService.processRfidTap(uid, deviceClassroom, deviceIdStr, eventTimestamp, topic, payloadStr);
 
     } catch (error) {
       console.error(`[MQTT] Error processing message on topic ${topic}:`, error);

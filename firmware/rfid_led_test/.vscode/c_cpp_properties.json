@@ -15,10 +15,6 @@
                 "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/ESPmDNS/src",
                 "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
-                "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/Adafruit SH110X",
-                "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/Adafruit GFX Library",
-                "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/Adafruit BusIO",
-                "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/PubSubClient/src",
                 "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/MFRC522/src",
                 "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
@@ -247,6 +243,7 @@
                 "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                 "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                 "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
+                "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 ""
             ],
             "browse": {
@@ -259,10 +256,6 @@
                     "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/ESPmDNS/src",
                     "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
-                    "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/Adafruit SH110X",
-                    "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/Adafruit GFX Library",
-                    "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/Adafruit BusIO",
-                    "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/PubSubClient/src",
                     "/Users/prateekpd/Projects/RollSync/firmware/rfid_led_test/.pio/libdeps/esp32-s3-devkitc-1/MFRC522/src",
                     "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
@@ -491,6 +484,7 @@
                     "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                     "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                     "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
+                    "/Users/prateekpd/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     ""
                 ]
             },

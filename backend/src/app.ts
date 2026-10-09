@@ -9,6 +9,7 @@ import studentsRoutes from './routes/students';
 
 import authRoutes from './routes/auth';
 import timetableRoutes from './routes/timetable';
+import demoRoutes from './routes/demo';
 
 const app = express();
 
@@ -25,6 +26,7 @@ apiRouter.use('/sessions', sessionsRoutes);
 apiRouter.use('/students', studentsRoutes);
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/timetable', timetableRoutes);
+apiRouter.use('/demo', demoRoutes);
 
 // Mock routes for definition of done
 apiRouter.get('/attendance', (req, res) => res.json([]));

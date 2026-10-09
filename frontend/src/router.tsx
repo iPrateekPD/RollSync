@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { AuthLayout } from './layouts/AuthLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
@@ -39,6 +39,11 @@ const Settings = Loadable(lazy(() => import('./pages/dashboard/Settings').then(m
 const LeaveRequests = Loadable(lazy(() => import('./pages/dashboard/LeaveRequests').then(module => ({ default: module.LeaveRequests }))));
 const DevicesList = Loadable(lazy(() => import('./pages/admin/DevicesList').then(module => ({ default: module.DevicesList }))));
 const CameraCapture = Loadable(lazy(() => import('./pages/camera/CameraCapture').then(module => ({ default: module.CameraCapture }))));
+const DemoCamera = Loadable(lazy(() => import('./pages/camera/DemoCamera').then(module => ({ default: module.DemoCamera }))));
+const FaceRegistration = Loadable(lazy(() => import('./pages/student/FaceRegistration').then(module => ({ default: module.FaceRegistration }))));
+const StudentDirectory = Loadable(lazy(() => import('./pages/student/StudentDirectory').then(module => ({ default: module.StudentDirectory }))));
+const StudentNotifications = Loadable(lazy(() => import('./pages/student/StudentNotifications').then(module => ({ default: module.StudentNotifications }))));
+const StudentSettings = Loadable(lazy(() => import('./pages/student/StudentSettings').then(module => ({ default: module.StudentSettings }))));
 
 export const router = createBrowserRouter([
   {
@@ -52,6 +57,10 @@ export const router = createBrowserRouter([
   {
     path: '/camera/:token',
     element: <CameraCapture />
+  },
+  {
+    path: '/camera/demo/:token',
+    element: <DemoCamera />
   },
   {
     element: <AuthLayout />,
@@ -81,7 +90,7 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute allowedRoles={['TEACHER']} />,
         children: [
-          { path: '/teacher', element: <TeacherDashboard /> },
+          { path: '/teacher', element: <Navigate to="/teacher/attendance" replace /> },
           { path: '/teacher/classes', element: <TeacherClasses /> },
           { path: '/teacher/attendance', element: <TeacherAttendance /> },
           { path: '/teacher/live', element: <LiveMonitor /> },
@@ -98,6 +107,10 @@ export const router = createBrowserRouter([
           { path: '/student', element: <StudentDashboard /> },
           { path: '/student/attendance', element: <StudentAttendance /> },
           { path: '/student/leaves', element: <StudentLeaves /> },
+          { path: '/student/face-registration', element: <FaceRegistration /> },
+          { path: '/student/students', element: <StudentDirectory /> },
+          { path: '/student/notifications', element: <StudentNotifications /> },
+          { path: '/student/settings', element: <StudentSettings /> },
         ]
       }
     ]

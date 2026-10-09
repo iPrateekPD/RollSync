@@ -4,6 +4,7 @@ import { Search, ChevronRight, CheckCircle2, Clock, CalendarDays } from 'lucide-
 import { fetchStudentsFromDB, fetchTodayClasses } from '../../api/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Modal } from '../../components/ui/Modal';
+import { QRCodeSVG } from 'qrcode.react';
 
 export const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +17,9 @@ export const TeacherDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [demoSession, setDemoSession] = useState<any>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -34,20 +38,10 @@ export const TeacherDashboard = () => {
         const teacherName = user.firstName ? `${user.firstName} ${user.lastName}` : (user.email || 'Dr. Jitendra Kumar');
         const { data } = await fetchTodayClasses(teacherName);
         if (data && data.classes) {
-          // Process classes to determine status and continuous classes
+          // Process classes to determine continuous classes
           const processedClasses = data.classes.map((cls: any, index: number, arr: any[]) => {
-            let status = 'UPCOMING';
-            // Mocking status based on time (for demo purposes)
-            // Real implementation would compare current time with cls.start_time
-            if (index === 0) status = 'CONFIRMED';
-            else if (index === 1) status = 'REVIEW';
-            
             return {
               ...cls,
-              status,
-              present: 42,
-              absent: 8,
-              exceptions: status === 'REVIEW' ? 2 : 0,
               continuous: arr[index + 1]?.subject_id === cls.subject_id
             };
           });
@@ -90,6 +84,32 @@ export const TeacherDashboard = () => {
     return (75 + (num % 25)).toFixed(1);
   };
 
+  const startDemo = async (cls: any) => {
+    setDemoLoading(true);
+    try {
+      const API_BASE = import.meta.env.VITE_CAMERA_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${API_BASE}/api/camera/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timetable_id: cls.id,
+          subject_id: cls.subject_id
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setDemoSession(data);
+        setDemoModalOpen(true);
+      } else {
+        console.error("Failed to start demo", data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   const getStatusDisplay = (cls: any) => {
     switch (cls.status) {
       case 'UPCOMING':
@@ -100,8 +120,17 @@ export const TeacherDashboard = () => {
         );
       case 'LIVE':
         return (
-          <div className="flex items-center gap-2 mt-4 text-[13px] font-medium text-[#EF4444] animate-pulse">
-            <div className="w-2 h-2 rounded-full bg-[#EF4444]" /> LIVE
+          <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
+            <div className="flex items-center gap-2 text-[13px] font-medium text-[#EF4444] animate-pulse mb-3">
+              <div className="w-2 h-2 rounded-full bg-[#EF4444]" /> LIVE
+            </div>
+            <button 
+              onClick={() => startDemo(cls)}
+              disabled={demoLoading}
+              className="w-full flex items-center justify-center gap-2 h-10 bg-[#0B65FE] text-white rounded-[8px] text-[13px] font-medium hover:bg-[#004BCC] transition-colors disabled:opacity-50"
+            >
+              START AI CAMERA DEMO
+            </button>
           </div>
         );
       case 'REVIEW':
@@ -310,6 +339,53 @@ export const TeacherDashboard = () => {
               className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[15px] font-medium text-white bg-[#111827] hover:bg-[#374151] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#111827] transition-colors"
             >
               Close Profile
+            </button>
+          </div>
+        )}
+      </Modal>
+
+      {/* AI Demo Modal */}
+      <Modal 
+        isOpen={demoModalOpen} 
+        onClose={() => setDemoModalOpen(false)} 
+        title="AI Camera Demo Session"
+      >
+        {demoSession && (
+          <div className="space-y-6 flex flex-col items-center">
+            <p className="text-[14px] text-center text-[#667085]">
+              Scan this QR code with a smartphone to start the 5-minute local AI attendance tracking demo.
+            </p>
+            <div className="p-4 bg-white border border-[#E5E7EB] rounded-[16px] shadow-sm">
+              <QRCodeSVG 
+                value={`${window.location.origin}/camera/${demoSession.token}`}
+                size={200} 
+              />
+            </div>
+            <div className="w-full">
+              <label className="text-[12px] font-medium text-[#111827] mb-1 block">Smartphone Link</label>
+              <div className="flex w-full items-center">
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={`${window.location.origin}/camera/${demoSession.token}`}
+                  className="flex-1 h-10 px-3 border border-[#E5E7EB] rounded-l-[8px] bg-[#F9FAFB] text-[13px] text-[#667085] focus:outline-none"
+                />
+                <button 
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/camera/${demoSession.token}`)}
+                  className="h-10 px-4 bg-[#0B65FE] text-white text-[13px] font-medium rounded-r-[8px] hover:bg-[#004BCC]"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // Here we could navigate to a dashboard to track the session progress
+                window.open(`${window.location.origin}/camera/${demoSession.token}`, '_blank');
+              }}
+              className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[14px] font-medium text-white bg-[#111827] hover:bg-[#374151]"
+            >
+              Open in Browser Instead
             </button>
           </div>
         )}

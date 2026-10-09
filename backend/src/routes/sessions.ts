@@ -76,5 +76,61 @@ router.post('/:id/end', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
+// POST /api/sessions/:id/confirm
+router.post('/:id/confirm', async (req, res) => {
+  const { id } = req.params;
+  const { records, teacher_id } = req.body; // records: { student_id, status }[]
+  
+  if (!records || !teacher_id) {
+    return res.status(400).json({ error: 'Missing records or teacher_id' });
+  }
+
+  try {
+    // End session if not ended, and set confirmed
+    await supabase.from('attendance_sessions').update({ 
+      active: false, 
+      status: 'completed',
+      confirmed: true,
+      confirmed_by: teacher_id,
+      confirmed_at: new Date().toISOString()
+    }).eq('id', id);
+
+    // Get existing records
+    const { data: existingRecords } = await supabase.from('attendance_records').select('id, student_id').eq('session_id', id);
+    const existingMap = new Map(existingRecords?.map(r => [r.student_id, r.id]) || []);
+
+    const now = new Date().toISOString();
+
+    for (const record of records) {
+      if (existingMap.has(record.student_id)) {
+        await supabase.from('attendance_records').update({
+          status: record.status,
+          teacher_confirmed: true,
+          confirmed_by: teacher_id,
+          confirmed_at: now,
+          updated_at: now
+        }).eq('id', existingMap.get(record.student_id));
+      } else {
+        await supabase.from('attendance_records').insert({
+          session_id: id,
+          student_id: record.student_id,
+          status: record.status,
+          source: 'manual',
+          timestamp: now,
+          teacher_confirmed: true,
+          confirmed_by: teacher_id,
+          confirmed_at: now
+        });
+      }
+    }
+
+    // TODO: Write to audit_logs
+
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('Confirmation error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 export default router;

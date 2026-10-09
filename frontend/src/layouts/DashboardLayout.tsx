@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -10,10 +10,12 @@ import {
   RadioReceiver,
   Settings,
   Bell,
-  Search
+  Search,
+  PlayCircle
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { DemoModal } from '../components/DemoModal';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -24,28 +26,32 @@ export const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
 
   const getNavItems = () => {
-    const baseItems = [
-      { name: 'Dashboard', href: `/${user?.role?.toLowerCase() || 'teacher'}`, icon: LayoutDashboard },
-    ];
-
     if (user?.role === 'ADMIN') {
-      baseItems.push(
+      return [
+        { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
         { name: 'Students', href: '/admin/students', icon: Users },
         { name: 'Reports', href: '/admin/reports', icon: FileText },
         { name: 'Devices', href: '/admin/devices', icon: RadioReceiver },
         { name: 'Settings', href: '/settings', icon: Settings }
-      );
+      ];
+    } else if (user?.role === 'STUDENT') {
+      return [
+        { name: 'Dashboard', href: '/student', icon: LayoutDashboard },
+        { name: 'Face Registration', href: '/student/face-registration', icon: Users },
+        { name: 'Attendance', href: '/student/attendance', icon: FileText },
+        { name: 'Students', href: '/student/students', icon: Users },
+        { name: 'Notifications', href: '/student/notifications', icon: Bell },
+        { name: 'Settings', href: '/student/settings', icon: Settings }
+      ];
     } else {
       // Default / Teacher view
-      baseItems.push(
-        { name: 'Students', href: '/teacher/students', icon: Users },
-        { name: 'Attendance', href: '/teacher/attendance', icon: FileText },
-        { name: 'Settings', href: '/settings', icon: Settings }
-      );
+      return [
+        { name: 'Attendance', href: '/teacher/attendance', icon: FileText }
+      ];
     }
-    return baseItems;
   };
 
   const navItems = getNavItems();
@@ -78,6 +84,7 @@ export const DashboardLayout = () => {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-[4px] overflow-y-auto">
           {navItems.map((item) => (
+            <React.Fragment key={item.name}>
             <NavLink
               key={item.name}
               to={item.href}
@@ -96,6 +103,17 @@ export const DashboardLayout = () => {
               )} strokeWidth={2} />
               {item.name}
             </NavLink>
+            
+            {user?.role === 'TEACHER' && item.name === 'Attendance' && (
+              <button 
+                onClick={() => setDemoModalOpen(true)}
+                className="w-full mt-1 flex items-center px-[12px] py-[10px] text-[14px] font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+              >
+                <PlayCircle className="w-[20px] h-[20px] mr-3 shrink-0" strokeWidth={2} />
+                Start Demo
+              </button>
+            )}
+            </React.Fragment>
           ))}
         </nav>
 
@@ -203,6 +221,8 @@ export const DashboardLayout = () => {
           </div>
         </main>
       </div>
+
+      <DemoModal isOpen={demoModalOpen} onClose={() => setDemoModalOpen(false)} />
     </div>
   );
 };

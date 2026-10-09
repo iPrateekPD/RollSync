@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
-import { Loader2, TrendingUp, Calendar as CalendarIcon, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, TrendingUp, Calendar as CalendarIcon, CheckCircle, XCircle, ScanFace, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   BarChart, 
@@ -9,173 +9,170 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
+import { format } from 'date-fns';
+
+interface AttendanceData {
+  stats: { percentage: number; total: number; present: number; absent: number };
+  chartData: any[];
+  records: any[];
+}
 
 export const StudentAttendance = () => {
   const { user } = useAuth();
-  const [records, setRecords] = useState<any[]>([]);
-  const [stats, setStats] = useState({ present: 0, absent: 0, total: 0, percentage: 0 });
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [data, setData] = useState<AttendanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMyAttendance = async () => {
-      try {
-        const response = await apiClient.get(`/attendance/student/${user?.profileId}`);
-        const attendanceData = response.data;
-        
-        // Sort newest first
-        attendanceData.sort((a: any, b: any) => 
-          new Date(b.classSession.date).getTime() - new Date(a.classSession.date).getTime()
-        );
-        
-        setRecords(attendanceData);
-
-        // Calculate stats
-        const total = attendanceData.length;
-        const present = attendanceData.filter((r: any) => r.status === 'PRESENT').length;
-        const absent = total - present;
-        const percentage = total === 0 ? 0 : Math.round((present / total) * 100);
-        
-        setStats({ present, absent, total, percentage });
-
-        // Generate chart data (group by course code)
-        const courseMap = new Map();
-        attendanceData.forEach((r: any) => {
-          const courseCode = r.classSession.course.code;
-          if (!courseMap.has(courseCode)) {
-            courseMap.set(courseCode, { name: courseCode, Present: 0, Absent: 0 });
-          }
-          const courseStats = courseMap.get(courseCode);
-          if (r.status === 'PRESENT') courseStats.Present += 1;
-          else courseStats.Absent += 1;
+    if (user?.id) {
+      apiClient.get(`/students/${user.id}/attendance`)
+        .then(res => {
+          setData(res.data);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error('Failed to load attendance', err);
+          setError('We couldn\'t load your attendance records.');
+          setIsLoading(false);
         });
-
-        setChartData(Array.from(courseMap.values()));
-      } catch (error) {
-        console.error('Failed to fetch attendance', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (user?.profileId) {
-      fetchMyAttendance();
     }
   }, [user]);
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#0B65FE]" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5" />
+          <p>{error || "Failed to load data"}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">My Attendance</h1>
-        <p className="mt-1 text-muted-foreground">Track your attendance across all registered courses.</p>
+        <h1 className="text-[32px] font-semibold tracking-tight text-[#111827]">Attendance History</h1>
+        <p className="mt-1 text-[15px] text-[#667085]">Track your attendance across all registered subjects.</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border flex items-center">
-          <div className="p-3 rounded-xl bg-zinc-100 mr-5">
-            <TrendingUp className="w-6 h-6 text-zinc-900" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-[#E5E7EB] flex items-center gap-4">
+          <div className="w-12 h-12 rounded-[12px] bg-[#E5F0FF] flex items-center justify-center shrink-0">
+            <TrendingUp className="w-6 h-6 text-[#0B65FE]" />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Overall</p>
-            <p className="text-3xl font-display font-bold text-foreground mt-0.5">{stats.percentage}%</p>
+            <p className="text-[13px] font-medium text-[#667085]">Overall</p>
+            <p className={`text-2xl font-bold mt-0.5 ${data.stats.percentage >= 75 ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+              {data.stats.percentage}%
+            </p>
           </div>
         </div>
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border flex items-center">
-          <div className="p-3 rounded-xl bg-green-100/50 mr-5">
-            <CheckCircle className="w-6 h-6 text-green-600" />
+        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-[#E5E7EB] flex items-center gap-4">
+          <div className="w-12 h-12 rounded-[12px] bg-[#ECFDF5] flex items-center justify-center shrink-0">
+            <CheckCircle className="w-6 h-6 text-[#10B981]" />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Attended</p>
-            <p className="text-3xl font-display font-bold text-foreground mt-0.5">{stats.present}</p>
+            <p className="text-[13px] font-medium text-[#667085]">Attended</p>
+            <p className="text-2xl font-bold text-[#111827] mt-0.5">{data.stats.present}</p>
           </div>
         </div>
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border flex items-center">
-          <div className="p-3 rounded-xl bg-destructive/10 mr-5">
-            <XCircle className="w-6 h-6 text-destructive" />
+        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-[#E5E7EB] flex items-center gap-4">
+          <div className="w-12 h-12 rounded-[12px] bg-[#FEF2F2] flex items-center justify-center shrink-0">
+            <XCircle className="w-6 h-6 text-[#EF4444]" />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Missed</p>
-            <p className="text-3xl font-display font-bold text-foreground mt-0.5">{stats.absent}</p>
+            <p className="text-[13px] font-medium text-[#667085]">Missed</p>
+            <p className="text-2xl font-bold text-[#111827] mt-0.5">{data.stats.absent}</p>
           </div>
         </div>
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border flex items-center">
-          <div className="p-3 rounded-xl bg-zinc-100 mr-5">
-            <CalendarIcon className="w-6 h-6 text-zinc-600" />
+        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-[#E5E7EB] flex items-center gap-4">
+          <div className="w-12 h-12 rounded-[12px] bg-[#F3F4F6] flex items-center justify-center shrink-0">
+            <CalendarIcon className="w-6 h-6 text-[#4B5563]" />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Total Sessions</p>
-            <p className="text-3xl font-display font-bold text-foreground mt-0.5">{stats.total}</p>
+            <p className="text-[13px] font-medium text-[#667085]">Total Sessions</p>
+            <p className="text-2xl font-bold text-[#111827] mt-0.5">{data.stats.total}</p>
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Chart */}
-        <div className="lg:col-span-2 bg-card p-8 rounded-2xl shadow-sm border border-border">
-          <h3 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-8">Attendance by Course</h3>
+        <div className="lg:col-span-2 bg-white p-6 rounded-[24px] shadow-sm border border-[#E5E7EB]">
+          <h3 className="font-semibold text-[#111827] text-[18px] mb-6">Subject Breakdown</h3>
           <div className="h-72">
-            {chartData.length > 0 ? (
+            {data.chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
+                <BarChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#667085' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#667085' }} />
                   <Tooltip 
-                    cursor={{ fill: '#f4f4f5' }}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }} 
+                    cursor={{ fill: '#F9FAFB' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} 
                   />
-                  <Bar dataKey="Present" fill="#09090b" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  <Bar dataKey="Absent" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                  <Bar dataKey="Present" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Bar dataKey="Absent" fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                No data available
+              <div className="h-full flex items-center justify-center text-sm text-[#667085]">
+                No class data available to display chart.
               </div>
             )}
           </div>
         </div>
 
-        {/* Recent Records */}
-        <div className="lg:col-span-1 bg-card rounded-2xl shadow-sm border border-border flex flex-col h-[400px] lg:h-auto overflow-hidden">
-          <div className="p-5 border-b border-border bg-card/50">
-            <h3 className="font-semibold text-foreground text-sm tracking-wide uppercase">Recent Sessions</h3>
+        {/* History List */}
+        <div className="lg:col-span-1 bg-white rounded-[24px] shadow-sm border border-[#E5E7EB] flex flex-col h-[500px] lg:h-auto overflow-hidden">
+          <div className="p-6 border-b border-[#E5E7EB]">
+            <h3 className="font-semibold text-[#111827] text-[18px]">Detailed History</h3>
           </div>
-          <div className="overflow-y-auto flex-1 p-3 space-y-2">
-            {records.slice(0, 20).map(record => (
-              <div key={record.id} className="flex justify-between items-center p-3 border border-border rounded-xl bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
-                <div>
-                  <p className="font-medium text-sm text-foreground">{record.classSession?.course?.code}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{new Date(record.classSession?.date).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  {record.status === 'PRESENT' ? (
-                    <span className="inline-flex items-center bg-green-100/50 text-green-700 text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border border-green-200">
-                      Present
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center bg-destructive/10 text-destructive text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border border-destructive/20">
-                      Absent
-                    </span>
-                  )}
-                </div>
+          <div className="overflow-y-auto flex-1 p-0">
+            {data.records.length > 0 ? (
+              <ul className="divide-y divide-[#E5E7EB]">
+                {data.records.map((record) => (
+                  <li key={record.id} className="p-4 sm:px-6 hover:bg-[#F9FAFB] transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[15px] font-medium text-[#111827]">{record.subject}</p>
+                        <p className="text-[13px] text-[#667085] mt-0.5">
+                          {format(new Date(record.date), 'MMM d, yyyy • h:mm a')}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          record.status.toLowerCase() === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                        </span>
+                        <span className="text-[11px] text-[#667085] flex items-center gap-1">
+                          {record.method === 'camera' ? <ScanFace className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                          {record.method}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                <p className="text-[#667085] text-[15px]">No attendance records found.</p>
               </div>
-            ))}
-            {records.length === 0 && (
-              <div className="text-center text-sm text-muted-foreground py-8">No recent attendance records.</div>
             )}
           </div>
         </div>

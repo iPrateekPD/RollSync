@@ -38,21 +38,63 @@ router.get('/today', async (req, res) => {
     const classes = await prisma.timetable.findMany({
       where: {
         teacher_id: teacher.id,
-        day: queryDay
+        day: queryDay,
+        active: true
       },
       include: {
         subjects: true,
-        teachers: true
+        teachers: true,
+        attendance_sessions: {
+          where: {
+            class_date: new Date(new Date().setHours(0,0,0,0))
+          },
+          include: {
+            attendance_records: true
+          }
+        }
       },
       orderBy: {
         start_time: 'asc'
       }
     });
 
+    const enrichedClasses = classes.map(cls => {
+      let status = 'UPCOMING';
+      let present = 0;
+      let absent = 0; // We might need to know total students to calculate absent correctly, or we just count present for now.
+      let exceptions = 0;
+      
+      const session = cls.attendance_sessions?.[0];
+      if (session) {
+        if (session.confirmed) status = 'CONFIRMED';
+        else if (session.status === 'completed') status = 'REVIEW';
+        else if (session.active) status = 'LIVE';
+        else status = 'REVIEW'; // Finished but not confirmed
+        
+        present = session.attendance_records.filter((r: any) => r.status === 'present').length;
+        exceptions = session.attendance_records.filter((r: any) => r.status === 'needs_review').length;
+      } else {
+         // Check if time has passed
+         const now = new Date();
+         const [endHour, endMin] = cls.end_time.split(':');
+         if (now.getHours() > Number(endHour) || (now.getHours() === Number(endHour) && now.getMinutes() > Number(endMin))) {
+             status = 'REVIEW';
+         }
+      }
+
+      return {
+        ...cls,
+        status,
+        present,
+        absent,
+        exceptions
+      };
+    });
+
     res.json({
       teacher,
       day: queryDay,
-      classes
+      classes: enrichedClasses
     });
 
   } catch (error) {

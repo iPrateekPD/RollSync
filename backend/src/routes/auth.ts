@@ -4,12 +4,13 @@ const router = Router();
 
 // Mock Login for Phase 4 testing
 router.post('/login', (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
   
   if (password === 'password123') {
     let role = 'TEACHER';
     let firstName = 'Prateek';
     let lastName = 'PD';
+    let id = '123'; // Some endpoints might fail with 123 if they expect UUID
 
     if (email.toLowerCase().includes('admin')) {
       role = 'ADMIN';
@@ -17,15 +18,16 @@ router.post('/login', (req, res) => {
       lastName = 'User';
     } else if (email.toLowerCase().includes('student')) {
       role = 'STUDENT';
-      firstName = 'Student';
-      lastName = 'User';
+      firstName = 'Alok';
+      lastName = 'Patel';
+      id = 'fedc366d-f4a5-4376-9992-0e9d4c6354d5'; // Real student UUID from db
     }
 
     res.json({
       accessToken: 'mock-jwt-token',
       refreshToken: 'mock-refresh-token',
       user: {
-        id: '123',
+        id: id,
         email: email,
         role: role,
         firstName: firstName,

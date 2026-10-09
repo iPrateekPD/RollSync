@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check, X, AlertTriangle, CheckCircle2, Camera } from 'lucide-react';
-import { fetchStudentsFromDB } from '../../api/supabase';
+import { fetchStudentsFromDB, confirmAttendance } from '../../api/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Modal } from '../../components/ui/Modal';
 import { QRCodeSVG } from 'qrcode.react';
+import { DemoAttendance } from './DemoAttendance';
 
 export const TeacherAttendance = () => {
   const navigate = useNavigate();
@@ -14,7 +16,12 @@ export const TeacherAttendance = () => {
   const [cameraSession, setCameraSession] = useState<{ token: string, status: string } | null>(null);
   const [polling, setPolling] = useState(false);
   
+  const demoSessionId = location.state?.demoSessionId;
   const cls = location.state?.class;
+
+  if (demoSessionId) {
+    return <DemoAttendance demoSessionId={demoSessionId} />;
+  }
 
   useEffect(() => {
     if (!cls) {
@@ -31,20 +38,32 @@ export const TeacherAttendance = () => {
     loadStudents();
   }, [cls, navigate]);
 
-  // Mock attendance state for the students
+  const { user } = useAuth();
+  
+  // Real attendance state
   const [attendanceState, setAttendanceState] = useState<Record<string, 'present' | 'absent' | 'exception'>>({});
+  const [, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (students.length > 0 && Object.keys(attendanceState).length === 0) {
       const newState: Record<string, 'present' | 'absent' | 'exception'> = {};
-      students.forEach((s, i) => {
-        if (i === 3 || i === 7) newState[s.id] = 'exception';
-        else if (i % 5 === 0) newState[s.id] = 'absent';
-        else newState[s.id] = 'present';
+      const session = cls?.attendance_sessions?.[0];
+      const records = session?.attendance_records || [];
+
+      students.forEach((s) => {
+        const record = records.find((r: any) => r.student_id === s.id);
+        if (record) {
+          if (record.status === 'present') newState[s.id] = 'present';
+          else if (record.status === 'needs_review') newState[s.id] = 'exception';
+          else newState[s.id] = 'absent';
+        } else {
+          // Default to absent pending confirmation
+          newState[s.id] = 'absent';
+        }
       });
       setAttendanceState(newState);
     }
-  }, [students]);
+  }, [students, cls]);
 
   const stats = {
     total: students.length,
@@ -53,12 +72,26 @@ export const TeacherAttendance = () => {
     exceptions: Object.values(attendanceState).filter(s => s === 'exception').length,
   };
 
-  const handleConfirm = () => {
-    // In a real app, send attendance to DB here
-    setConfirmed(true);
-    setTimeout(() => {
-      navigate('/teacher');
-    }, 2000);
+  const handleConfirm = async () => {
+    if (!cls?.attendance_sessions?.[0]?.id || !user?.id) return;
+    setIsSubmitting(true);
+    const records = Object.keys(attendanceState).map(student_id => ({
+      student_id,
+      status: attendanceState[student_id]
+    }));
+    
+    const { error } = await confirmAttendance(cls.attendance_sessions[0].id, records, user.id);
+    setIsSubmitting(false);
+    
+    if (!error) {
+      setConfirmed(true);
+      setTimeout(() => {
+        navigate('/teacher');
+      }, 2000);
+    } else {
+      console.error(error);
+      alert('Failed to confirm attendance');
+    }
   };
 
   const updateStatus = (id: string, status: 'present' | 'absent') => {
@@ -173,16 +206,6 @@ export const TeacherAttendance = () => {
           )}
         </div>
         
-        {/* Camera Action Button */}
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={startCameraAttendance}
-            className="flex items-center gap-2 px-4 py-2 bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#111827] rounded-[8px] font-medium transition-colors"
-          >
-            <Camera className="w-5 h-5" />
-            Start Camera Attendance
-          </button>
-        </div>
       </div>
       )}
 

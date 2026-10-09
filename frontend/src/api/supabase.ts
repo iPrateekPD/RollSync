@@ -64,3 +64,22 @@ export const fetchTodayClasses = async (teacherId: string, day?: string) => {
   const data = await res.json();
   return { data, error: null };
 };
+
+export const confirmAttendance = async (sessionId: string, records: any[], teacherId: string) => {
+  const url = `${API_URL}/sessions/${sessionId}/confirm`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ records, teacher_id: teacherId })
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    return { data: null, error: new Error(errData.error || 'Failed to confirm attendance') };
+  }
+
+  const data = await res.json();
+  return { data, error: null };
+};

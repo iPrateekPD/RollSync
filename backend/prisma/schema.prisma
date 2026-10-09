@@ -17,10 +17,20 @@ model attendance_records {
   status              String              @default("present")
   source              String              @default("rfid")
   created_at          DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+  first_scan_at       DateTime?           @db.Timestamptz(6)
+  last_scan_at        DateTime?           @db.Timestamptz(6)
+  face_verification_summary Json?
+  teacher_confirmed   Boolean             @default(false)
+  confirmed_by        String?             @db.Uuid
+  confirmed_at        DateTime?           @db.Timestamptz(6)
+  
   devices             devices?            @relation(fields: [device_id], references: [id], onUpdate: NoAction)
   attendance_sessions attendance_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   students            students            @relation(fields: [student_id], references: [id], onUpdate: NoAction)
+  confirmer           teachers?           @relation("RecordConfirmer", fields: [confirmed_by], references: [id], onUpdate: NoAction)
 
+  @@unique([session_id, student_id])
   @@index([session_id])
   @@index([student_id])
   @@index([timestamp])
@@ -34,12 +44,23 @@ model attendance_sessions {
   start_time         DateTime             @db.Timestamptz(6)
   end_time           DateTime             @db.Timestamptz(6)
   active             Boolean              @default(false)
+  class_date         DateTime             @default(now()) @db.Date
+  actual_start_time  DateTime?            @db.Timestamptz(6)
+  actual_end_time    DateTime?            @db.Timestamptz(6)
+  status             String               @default("scheduled")
+  confirmed          Boolean              @default(false)
+  confirmed_by       String?              @db.Uuid
+  confirmed_at       DateTime?            @db.Timestamptz(6)
   created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  
   attendance_records attendance_records[]
+  rfid_events        rfid_events[]
   camera_sessions    camera_sessions[]
   subjects           subjects             @relation(fields: [subject_id], references: [id], onUpdate: NoAction)
   timetable          timetable?           @relation(fields: [timetable_id], references: [id], onUpdate: NoAction)
+  confirmer          teachers?            @relation("SessionConfirmer", fields: [confirmed_by], references: [id], onUpdate: NoAction)
 
+  @@unique([timetable_id, class_date])
   @@index([active])
 }
 
@@ -53,15 +74,17 @@ model devices {
   last_seen          DateTime?            @db.Timestamptz(6)
   created_at         DateTime             @default(now()) @db.Timestamptz(6)
   attendance_records attendance_records[]
+  rfid_events        rfid_events[]
 }
 
 model rfid_cards {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  uid        String   @unique
-  student_id String   @db.Uuid
-  active     Boolean  @default(true)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  students   students @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uid            String   @unique
+  student_id     String   @db.Uuid
+  active         Boolean  @default(true)
+  deactivated_at DateTime? @db.Timestamptz(6)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  students       students @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([student_id])
 }
@@ -75,11 +98,16 @@ model students {
   department         String?
   semester           Int?
   section            String?
+  active             Boolean              @default(true)
   created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
   attendance_records attendance_records[]
+  rfid_events        rfid_events[]
   rfid_cards         rfid_cards[]
   face_profiles      face_profiles[]
   camera_observations camera_observations[]
+  demo_class_roster   demo_class_roster[]
+  demo_class_attendance demo_class_attendance[]
 }
 
 model subjects {
@@ -93,12 +121,19 @@ model subjects {
 
 model teachers {
   id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  auth_id    String?     @unique @db.Uuid
   name       String      @unique
   email      String?     @unique
   department String?
   role       String?     @default("teacher")
   created_at DateTime    @default(now()) @db.Timestamptz(6)
   timetable  timetable[]
+  
+  attendance_sessions_confirmed attendance_sessions[] @relation("SessionConfirmer")
+  attendance_records_confirmed  attendance_records[]  @relation("RecordConfirmer")
+  audit_logs                    audit_logs[]
+  demo_class_sessions           demo_class_sessions[]
+  demo_class_audit_logs         demo_class_audit_logs[]
 }
 
 model timetable {
@@ -112,6 +147,7 @@ model timetable {
   room         String
   class_type   String?
   is_lab       Boolean   @default(false)
+  active       Boolean   @default(true)
   created_at   DateTime  @default(now()) @db.Timestamptz(6)
   
   subjects     subjects  @relation(fields: [subject_id], references: [id], onDelete: Cascade)
@@ -159,4 +195,118 @@ model camera_observations {
 
   camera_sessions     camera_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
   students            students?       @relation(fields: [student_id], references: [id], onDelete: SetNull)
+}
+
+model rfid_events {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id            String?              @unique
+  device_id           String?              @db.Uuid
+  uid                 String
+  student_id          String?              @db.Uuid
+  student_name_snapshot String?
+  classroom           String?
+  event_timestamp     DateTime             @db.Timestamptz(6)
+  server_timestamp    DateTime             @default(now()) @db.Timestamptz(6)
+  mqtt_topic          String?
+  raw_payload         Json?
+  session_id          String?              @db.Uuid
+  processing_status   String               @default("pending") // pending, matched, unmatched, error
+  review_reason       String?
+  
+  devices             devices?             @relation(fields: [device_id], references: [id], onUpdate: NoAction)
+  students            students?            @relation(fields: [student_id], references: [id], onUpdate: NoAction)
+  attendance_sessions attendance_sessions? @relation(fields: [session_id], references: [id], onUpdate: NoAction)
+  
+  @@index([uid])
+  @@index([event_timestamp])
+}
+
+model audit_logs {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_id            String?             @db.Uuid
+  action              String
+  entity_type         String
+  entity_id           String?             @db.Uuid
+  reason              String?
+  before_state        Json?
+  after_state         Json?
+  timestamp           DateTime            @default(now()) @db.Timestamptz(6)
+  
+  teachers            teachers?           @relation(fields: [actor_id], references: [id], onUpdate: NoAction)
+}
+
+model demo_class_sessions {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teacher_id          String   @db.Uuid
+  section             String   @default("SEC B")
+  classroom           String   @default("RDB 6")
+  duration_minutes    Int      @default(3)
+  status              String   @default("waiting") // waiting, in_progress, processing, review_ready, confirmed
+  token               String   @unique
+  started_at          DateTime? @db.Timestamptz(6)
+  ended_at            DateTime? @db.Timestamptz(6)
+  confirmed_at        DateTime? @db.Timestamptz(6)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  teachers            teachers @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  demo_class_roster   demo_class_roster[]
+  demo_class_captures demo_class_captures[]
+  demo_class_attendance demo_class_attendance[]
+}
+
+model demo_class_roster {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id          String   @db.Uuid
+  student_id          String   @db.Uuid
+  name                String
+  roll_number         String
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  session             demo_class_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  student             students            @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  
+  @@unique([session_id, student_id])
+}
+
+model demo_class_captures {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id          String   @db.Uuid
+  capture_number      Int
+  status              String   @default("pending") // pending, processing, success, failed
+  results             Json?
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  processed_at        DateTime? @db.Timestamptz(6)
+
+  session             demo_class_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  
+  @@unique([session_id, capture_number])
+}
+
+model demo_class_attendance {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id          String   @db.Uuid
+  student_id          String   @db.Uuid
+  frames_recognized   Int      @default(0)
+  valid_frames        Int      @default(0)
+  ai_classification   String   // Present, Absent, Maybe
+  teacher_decision    String?  // Present, Absent
+  review_status       String   @default("pending") // pending, confirmed
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  session             demo_class_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  student             students            @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  
+  @@unique([session_id, student_id])
+}
+
+model demo_class_audit_logs {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id          String   @db.Uuid
+  actor_id            String?  @db.Uuid
+  action              String
+  details             Json?
+  timestamp           DateTime @default(now()) @db.Timestamptz(6)
+
+  teachers            teachers? @relation(fields: [actor_id], references: [id], onDelete: SetNull)
 }
