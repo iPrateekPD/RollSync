@@ -1,38 +1,27 @@
-# RollSync System Architecture
+# RollSync Architecture
 
-RollSync is a modern, IoT-enabled Smart Attendance Management System. It replaces traditional paper-based attendance with an automated hardware-to-cloud pipeline.
+## Overview
+RollSync is a Smart Attendance Management System that combines RFID hardware, Web dashboards, and AI-powered Facial Recognition to automate classroom attendance.
 
-## High-Level Components
+## System Components
 
-1. **Hardware (IoT Edge Node)**
-   - **ESP32 Microcontroller:** Connects to campus Wi-Fi and handles MQTT communication.
-   - **MFRC522 RFID Reader:** Scans student ID cards.
-   - **Status LEDs & Buzzer:** Provides immediate physical feedback (Success/Error).
+### 1. Frontend (React + Vite)
+- **Hosting**: Vercel
+- **Role**: Provides the UI for Admins to manage students and Teachers to review live attendance.
 
-2. **Message Broker (MQTT)**
-   - Used for real-time, lightweight communication between the hardware and the backend.
-   - **Topics:** `classroom/RDB-6/rfid`, `classroom/RDB-6/status`.
+### 2. Main Backend (Node.js + Express)
+- **Hosting**: Render
+- **Database**: Supabase (PostgreSQL) via Prisma ORM
+- **Role**: Source of truth. Handles CRUD operations, RFID scans, and attendance rules.
 
-3. **Backend API (Node.js / Express)**
-   - Hosted on Render.
-   - Connects to the MQTT broker to ingest RFID scans.
-   - Manages business logic (verifying if a class is active, validating student registration).
-   - Serves REST endpoints to the Frontend.
+### 3. AI Camera Backend (Python + FastAPI)
+- **Hosting**: Local / GPU Cloud
+- **Role**: Runs the heavy `InsightFace` machine learning models. 
+- **Flow**: 
+  1. Receives frames from the classroom camera (or teacher's phone).
+  2. Detects and extracts facial embeddings.
+  3. Compares embeddings directly with the `face_profiles` table in Supabase.
+  4. Marks attendance in the `camera_observations` table.
 
-4. **Database (Supabase / PostgreSQL)**
-   - Managed via **Prisma ORM**.
-   - Stores normalized tables: `students`, `teachers`, `subjects`, `timetable`, `attendance_sessions`, and `attendance_logs`.
-   - Uses Row Level Security (RLS) policies for frontend security.
-
-5. **Frontend (React / Vite + TailwindCSS)**
-   - Hosted on Vercel.
-   - **Teacher Dashboard:** Shows dynamically fetched timetables and allows manual override/confirmation of attendance.
-   - Uses Supabase client for certain reads and the custom Backend API for business logic.
-
-## Data Flow Diagram (Attendance Process)
-1. Student taps RFID card on the scanner.
-2. ESP32 publishes the UID to the MQTT broker.
-3. Backend subscribes to MQTT, receives UID, and checks the current active session in Supabase.
-4. Backend logs the attendance in `attendance_logs` and emits a success signal back via MQTT.
-5. ESP32 flashes a green LED and beeps.
-6. The Teacher Dashboard (via WebSocket/Polling) updates the "Present" count in real-time.
+### 4. Hardware (ESP32)
+- **Role**: Physical IoT device installed in classrooms. Scans student ID cards (RFID) and provides instant LED feedback. Communicates with the Node.js backend via REST API over Wi-Fi.

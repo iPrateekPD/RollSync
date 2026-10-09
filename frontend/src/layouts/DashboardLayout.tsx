@@ -173,12 +173,12 @@ export const DashboardLayout = () => {
             >
               <div className="flex flex-col items-end">
                 <span className="text-[14px] font-medium text-[#111827] group-hover:text-[#0B65FE] transition-colors">
-                  {user?.role === 'ADMIN' ? 'Admin' : 'Dr. Ami Kumar Parida'}
+                  {user?.role === 'ADMIN' ? 'Admin' : (user?.firstName ? `${user.firstName} ${user.lastName}` : 'Teacher')}
                 </span>
-                <span className="text-[12px] text-[#667085]">{user?.role || 'Teacher'}</span>
+                <span className="text-[12px] text-[#667085]">{user?.role === 'TEACHER' ? 'Teacher' : (user?.role || 'User')}</span>
               </div>
               <div className="w-10 h-10 rounded-[10px] bg-[#E5F0FF] text-[#0B65FE] flex items-center justify-center font-medium text-[14px] group-hover:bg-[#0B65FE] group-hover:text-white transition-colors">
-                {user?.role === 'ADMIN' ? 'A' : 'A'}
+                {user?.role === 'ADMIN' ? 'A' : (user?.firstName ? user.firstName.replace('Dr. ', '').replace('Mrs. ', '').charAt(0) : 'T')}
               </div>
             </div>
 
