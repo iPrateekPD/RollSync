@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { AuthLayout } from './layouts/AuthLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
@@ -90,7 +90,7 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute allowedRoles={['TEACHER']} />,
         children: [
-          { path: '/teacher', element: <Navigate to="/teacher/attendance" replace /> },
+          { path: '/teacher', element: <TeacherDashboard /> },
           { path: '/teacher/classes', element: <TeacherClasses /> },
           { path: '/teacher/attendance', element: <TeacherAttendance /> },
           { path: '/teacher/live', element: <LiveMonitor /> },

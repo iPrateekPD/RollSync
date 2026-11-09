@@ -87,10 +87,13 @@ export const TeacherDashboard = () => {
   const startDemo = async (cls: any) => {
     setDemoLoading(true);
     try {
-      const API_BASE = import.meta.env.VITE_CAMERA_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${API_BASE}/api/camera/session`, {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/demo/session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           timetable_id: cls.id,
           subject_id: cls.subject_id

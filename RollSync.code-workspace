@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "rfid_led_test",
+			"path": "firmware/rfid_led_test"
+		}
+	],
+	"settings": {}
+}

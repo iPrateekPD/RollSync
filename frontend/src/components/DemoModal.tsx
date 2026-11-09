@@ -5,9 +5,10 @@ import { useNavigate } from 'react-router-dom';
 interface DemoModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialSession?: any;
 }
 
-export const DemoModal = ({ isOpen, onClose }: DemoModalProps) => {
+export const DemoModal = ({ isOpen, onClose, initialSession }: DemoModalProps) => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,37 +18,35 @@ export const DemoModal = ({ isOpen, onClose }: DemoModalProps) => {
 
   useEffect(() => {
     if (isOpen) {
-      startDemo();
+      if (initialSession) {
+        setSession(initialSession);
+        setPolling(true);
+      } else {
+        // If no initial session, try to fetch an active one
+        fetchActiveSession();
+      }
     } else {
       setSession(null);
       setPolling(false);
+      setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, initialSession]);
 
-  const startDemo = async () => {
+  const fetchActiveSession = async () => {
     setLoading(true);
     setError('');
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/demo/session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       
-      if (!res.ok) {
-        if (data.session) {
-          setSession(data.session);
-          setPolling(true);
-        } else {
-          throw new Error(data.error || 'Failed to start demo');
-        }
-      } else {
+      if (res.ok && data) {
         setSession(data);
         setPolling(true);
+      } else if (!res.ok) {
+        throw new Error(data.error || 'Failed to fetch demo session');
       }
     } catch (err: any) {
       setError(err.message);

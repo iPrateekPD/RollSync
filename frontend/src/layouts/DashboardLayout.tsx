@@ -49,7 +49,7 @@ export const DashboardLayout = () => {
     } else {
       // Default / Teacher view
       return [
-        { name: 'Attendance', href: '/teacher/attendance', icon: FileText }
+        { name: 'Attendance', href: '/teacher', icon: FileText }
       ];
     }
   };

@@ -206,6 +206,16 @@ export const TeacherAttendance = () => {
           )}
         </div>
         
+        {/* Camera Action Button */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={startCameraAttendance}
+            className="flex items-center gap-2 px-4 py-2 bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#111827] rounded-[8px] font-medium transition-colors"
+          >
+            <Camera className="w-5 h-5" />
+            Start Camera Attendance
+          </button>
+        </div>
       </div>
       )}
 
