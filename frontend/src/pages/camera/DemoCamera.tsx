@@ -60,7 +60,7 @@ export const DemoCamera = () => {
     if (!video || !canvas || !CAMERA_API) {
       throw new Error('Camera AI service is not configured yet. Please contact the teacher.');
     }
-    if (!video.videoWidth || !video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+    if (!video.videoWidth || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
       throw new Error('Camera is not ready. Please wait a moment and try again.');
     }
 
