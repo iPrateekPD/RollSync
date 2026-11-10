@@ -143,7 +143,7 @@ export const DemoCamera = () => {
       setMessage('Captures are complete. Waiting for the teacher-selected class duration to finish…');
       await sleep(Math.max(0, classEndsAt - Date.now()));
       if (stoppedRef.current) return;
-      const completeResponse = await fetch(`${API_BASE}/demo/session/${session.id}/complete`, { method: 'POST' });
+      const completeResponse = await fetch(`${API_BASE}/demo/session/${token}/complete`, { method: 'POST' });
       const completeData = await completeResponse.json().catch(() => ({}));
       if (!completeResponse.ok) throw new Error(completeData.error || 'Could not finish the camera session.');
 
