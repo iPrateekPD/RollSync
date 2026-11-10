@@ -8,7 +8,7 @@ export interface User {
   id: string;
   email: string;
   role: Role;
-  profileId?: string; // Maps to studentId or teacherId
+  profileId?: string;
   firstName?: string;
   lastName?: string;
 }
@@ -29,27 +29,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('accessToken');
+
       if (token) {
-        if (token === 'mock-access-token') {
-          // Restore mock session
-          setUser({
-            id: 'mock-teacher-1',
-            email: 'teacher@rollsync.com',
-            role: 'TEACHER',
-            firstName: 'Reema',
-            lastName: 'Angelin'
-          });
-        } else {
-          try {
-            const response = await apiClient.get('/auth/me');
-            setUser(response.data);
-          } catch (error) {
-            console.error('Failed to restore session:', error);
+        try {
+          const response = await apiClient.get('/auth/me');
+          const restoredUser = response.data as User;
+
+          if (restoredUser?.role === 'TEACHER') {
+            setUser(restoredUser);
+          } else {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
           }
+        } catch (error) {
+          console.error('Failed to restore session:', error);
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
         }
       }
+
       setIsLoading(false);
     };
 
@@ -57,6 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (accessToken: string, refreshToken: string, userData: User) => {
+    if (userData.role !== 'TEACHER') return;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     setUser(userData);
