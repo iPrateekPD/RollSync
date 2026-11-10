@@ -21,6 +21,28 @@ export const TeacherDashboard = () => {
   const [demoSession, setDemoSession] = useState<any>(null);
   const [demoLoading, setDemoLoading] = useState(false);
 
+  useEffect(() => {
+    if (!demoModalOpen || !demoSession) return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const authToken = localStorage.getItem('token');
+        const response = await fetch('/api/demo/session', {
+          headers: { ...(authToken ? { Authorization: 'Bearer ' + authToken } : {}) }
+        });
+        if (response.ok) {
+          const latest = await response.json();
+          if (!cancelled && latest && latest.id === demoSession.id) setDemoSession(latest);
+        }
+      } catch (error) {
+        console.warn('[DEMO] Could not refresh class status', error);
+      }
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 3000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [demoModalOpen, demoSession?.id]);
+
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   useEffect(() => {
@@ -365,8 +387,11 @@ export const TeacherDashboard = () => {
         {demoSession && (
           <div className="space-y-6 flex flex-col items-center">
             <p className="text-[14px] text-center text-[#667085]">
-              Class started. Scan this QR code on the classroom phone, then explicitly tap Start Capture. The class timer runs for 2 minutes.
+              Class started. Scan this QR code on the classroom phone, then explicitly tap Start Capture. The class timer runs for {demoSession.duration_minutes || 2} minutes.
             </p>
+            <div className="w-full rounded-xl bg-[#F3F4F6] px-4 py-3 text-sm text-center text-[#344054]">
+              Class status: <strong>{(demoSession.status || 'waiting').replace('_', ' ').toUpperCase()}</strong>
+            </div>
             <div className="p-4 bg-white border border-[#E5E7EB] rounded-[16px] shadow-sm">
               <QRCodeSVG 
                 value={`${window.location.origin}/camera/demo/${demoSession.token}`}
