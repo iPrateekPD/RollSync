@@ -7,8 +7,6 @@ type CameraStatus = 'loading' | 'ready' | 'starting' | 'capturing' | 'uploading'
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const CAMERA_API = (import.meta.env.VITE_CAMERA_API_URL || '').replace(/\/$/, '');
 const TOTAL_FRAMES = 5;
-const CAPTURE_INTERVAL_MS = 5_000;
-const FIRST_CAPTURE_DELAY_MS = 30_000;
 const sleep = (ms: number) => new Promise(resolve => window.setTimeout(resolve, Math.max(0, ms)));
 
 export const DemoCamera = () => {
@@ -22,7 +20,6 @@ export const DemoCamera = () => {
   const [status, setStatus] = useState<CameraStatus>('loading');
   const [message, setMessage] = useState('Checking your camera link…');
   const [frameIndex, setFrameIndex] = useState(0);
-  const [countdown, setCountdown] = useState(30);
   const [error, setError] = useState('');
 
   const stopCamera = useCallback(() => {
@@ -116,18 +113,25 @@ export const DemoCamera = () => {
         await videoRef.current.play();
       }
       stoppedRef.current = false;
-      const classStartedAt = new Date(liveSession.started_at).getTime();
+
       const classEndsAt = new Date(liveSession.ended_at).getTime();
-      const firstCaptureAt = classStartedAt + FIRST_CAPTURE_DELAY_MS;
+      const captureStartedAt = Date.now();
+      const remainingDurationMs = classEndsAt - captureStartedAt;
+      if (remainingDurationMs <= 0) throw new Error('The selected class duration has already ended.');
+
+      // Five captures are evenly distributed across the remaining selected class duration.
+      // The first is captured immediately; the remaining four use the same interval.
+      const captureIntervalMs = remainingDurationMs / TOTAL_FRAMES;
       setStatus('waiting');
-      setMessage('Camera connected. Waiting until 30 seconds after class start for the first capture…');
-      await sleep(Math.max(0, firstCaptureAt - Date.now()));
+      setMessage(`Camera connected. Five frames will be captured at equal intervals across the remaining class time.`);
 
       for (let frame = 1; frame <= TOTAL_FRAMES; frame += 1) {
-        if (stoppedRef.current || Date.now() >= classEndsAt) break;
-        const scheduledAt = firstCaptureAt + (frame - 1) * CAPTURE_INTERVAL_MS;
+        if (stoppedRef.current) return;
+        const scheduledAt = captureStartedAt + (frame - 1) * captureIntervalMs;
         await sleep(Math.max(0, scheduledAt - Date.now()));
-        if (stoppedRef.current || Date.now() >= classEndsAt) break;
+        if (stoppedRef.current) return;
+        if (Date.now() >= classEndsAt) break;
+
         setFrameIndex(frame - 1);
         setStatus('capturing');
         setMessage(`Capturing frame ${frame} of ${TOTAL_FRAMES}…`);
@@ -135,12 +139,13 @@ export const DemoCamera = () => {
         setFrameIndex(frame);
         if (frame < TOTAL_FRAMES) {
           setStatus('waiting');
-          setMessage(`Frame ${frame} received. Next capture is scheduled in 5 seconds.`);
+          const nextCaptureInSeconds = Math.max(1, Math.round((scheduledAt + captureIntervalMs - Date.now()) / 1000));
+          setMessage(`Frame ${frame} received. Next frame in approximately ${nextCaptureInSeconds} seconds.`);
         }
       }
 
       setStatus('waiting');
-      setMessage('Captures are complete. Waiting for the teacher-selected class duration to finish…');
+      setMessage('All five capture slots have been processed. Waiting for the selected class duration to finish…');
       await sleep(Math.max(0, classEndsAt - Date.now()));
       if (stoppedRef.current) return;
       const completeResponse = await fetch(`${API_BASE}/demo/session/${token}/complete`, { method: 'POST' });
@@ -207,7 +212,7 @@ export const DemoCamera = () => {
             <>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
                 <div className="mb-2 flex items-center gap-2 font-medium text-white"><ShieldCheck className="h-4 w-4 text-emerald-400" /> Before you start</div>
-                Keep this phone plugged in if possible, allow camera access, and point the rear camera towards the classroom. The camera preview does not upload anything. After the teacher starts the class, tap below to begin capture. The first frame is scheduled 30 seconds after class start, followed by four frames 5 seconds apart.
+                Keep this phone plugged in if possible, allow camera access, and point the rear camera towards the classroom. The camera preview does not upload anything. After the teacher starts the class, tap below to begin capture. Five frames are captured at equal intervals across the remaining selected class duration.
               </div>
               <button onClick={startCapture} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold hover:bg-blue-500">
                 <Camera className="h-5 w-5" /> Enable camera and start capture
