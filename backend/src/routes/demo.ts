@@ -6,6 +6,34 @@ import { publishRfidControl } from '../mqtt';
 
 const router = Router();
 
+async function closeExpiredDemoSession(session: any) {
+  if (session.status !== 'in_progress' || !session.ended_at || session.ended_at.getTime() > Date.now()) return session;
+  const roster = await prisma.demo_class_roster.findMany({ where: { session_id: session.id } });
+  const captures = await prisma.demo_class_captures.findMany({ where: { session_id: session.id, status: 'success' } });
+  const rfidEvents = await prisma.demo_class_rfid_events.findMany({ where: { session_id: session.id, processing_status: 'matched' } });
+  const rfidStudents = new Set(rfidEvents.map(event => event.student_id).filter((value): value is string => Boolean(value)));
+  const recognizedByStudent = new Map<string, number>();
+  captures.forEach((capture: any) => {
+    const frameStudents = new Set<string>();
+    (Array.isArray(capture.results) ? capture.results : []).forEach((result: any) => {
+      if (result?.student_id && result.status === 'VERIFIED') frameStudents.add(result.student_id);
+    });
+    frameStudents.forEach(id => recognizedByStudent.set(id, (recognizedByStudent.get(id) || 0) + 1));
+  });
+  for (const student of roster) {
+    const recognized = recognizedByStudent.get(student.student_id) || 0;
+    const classification = recognized >= 3 && rfidStudents.has(student.student_id) ? 'Present' : 'Needs Review';
+    await prisma.demo_class_attendance.upsert({
+      where: { session_id_student_id: { session_id: session.id, student_id: student.student_id } },
+      create: { session_id: session.id, student_id: student.student_id, valid_frames: captures.length, frames_recognized: recognized, ai_classification: classification },
+      update: { valid_frames: captures.length, frames_recognized: recognized, ai_classification: classification }
+    });
+  }
+  const closed = await prisma.demo_class_sessions.update({ where: { id: session.id }, data: { status: 'review_ready' } });
+  try { publishRfidControl(session.classroom, false); } catch (error) { console.error('[DEMO] RFID auto-stop failed:', error); }
+  return closed;
+}
+
 // GET active demo session for a teacher
 router.get('/session', authenticate, async (req, res) => {
   try {
@@ -20,7 +48,8 @@ router.get('/session', authenticate, async (req, res) => {
       orderBy: { created_at: 'desc' }
     });
 
-    res.json(session || null);
+    const refreshed = session ? await closeExpiredDemoSession(session) : null;
+    res.json(refreshed || null);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -138,6 +167,7 @@ router.post('/session/:token/complete', async (req, res) => {
     if (!session) return res.status(404).json({ error: 'Session not found' });
     const id = session.id;
     const roster = await prisma.demo_class_roster.findMany({ where: { session_id: id } });
+    if (session.status === 'review_ready' || session.status === 'confirmed') return res.json(session);
     if (session.status !== 'in_progress' && session.status !== 'processing') {
       return res.status(400).json({ error: 'Only a running class can be completed.' });
     }
