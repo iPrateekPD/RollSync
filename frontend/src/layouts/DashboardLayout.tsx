@@ -5,7 +5,6 @@ import {
   LogOut,
   Menu,
   LayoutDashboard,
-  Users,
   FileText,
   CalendarDays,
   Clock3,
@@ -28,7 +27,6 @@ const navItems = [
   { name: 'Attendance', href: '/teacher/attendance', icon: ClipboardCheck },
   { name: 'Live Monitor', href: '/teacher/live', icon: Clock3 },
   { name: 'Timetable', href: '/teacher/timetable', icon: CalendarDays },
-  { name: 'Students', href: '/teacher/students', icon: Users },
   { name: 'Reports', href: '/teacher/reports', icon: FileText },
   { name: 'Leave Requests', href: '/teacher/leaves', icon: Bell },
   { name: 'Settings', href: '/teacher/settings', icon: Settings }
