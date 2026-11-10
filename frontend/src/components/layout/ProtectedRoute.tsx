@@ -1,13 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Role } from '../../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-interface ProtectedRouteProps {
-  allowedRoles?: Role[];
-}
-
-export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
+export const ProtectedRoute = () => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
@@ -19,20 +14,8 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
-    // Redirect to login but save the attempted URL
+  if (!user || user.role !== 'TEACHER') {
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Redirect to their respective dashboard if they don't have access
-    const dashboardRoute = user.role === 'ADMIN' 
-      ? '/admin' 
-      : user.role === 'TEACHER' 
-        ? '/teacher' 
-        : '/student';
-        
-    return <Navigate to={dashboardRoute} replace />;
   }
 
   return <Outlet />;
