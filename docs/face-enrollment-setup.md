@@ -24,7 +24,7 @@ SUPABASE_SERVICE_ROLE_KEY=<server-only-service-role-key>
 
 Keep the Supabase service-role key only in the private camera-service environment. Never add it to Vite variables or frontend code.
 
-## Registration flow
+## Demo student account\n\nFor the controlled demo login, use email `student@rollsync.com` and password `password123`. The backend maps this demo student login to the existing active student record `24ECE002` / `PRATIK DAS`. This is a temporary demo credential, not production authentication.\n\n## Registration flow
 
 1. The signed-in student opens **Student → Face Registration**.
 2. The browser requests camera access only after the student presses **Start Camera**.
