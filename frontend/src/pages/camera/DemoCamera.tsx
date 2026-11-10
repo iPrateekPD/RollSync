@@ -7,7 +7,9 @@ type CameraStatus = 'loading' | 'ready' | 'starting' | 'capturing' | 'uploading'
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const CAMERA_API = (import.meta.env.VITE_CAMERA_API_URL || '').replace(/\/$/, '');
 const TOTAL_FRAMES = 5;
-const CAPTURE_INTERVAL_MS = 10_000;
+const CAPTURE_INTERVAL_MS = 5_000;
+const FIRST_CAPTURE_DELAY_MS = 30_000;
+const sleep = (ms: number) => new Promise(resolve => window.setTimeout(resolve, Math.max(0, ms)));
 
 export const DemoCamera = () => {
   const { token } = useParams<{ token: string }>();
@@ -20,7 +22,7 @@ export const DemoCamera = () => {
   const [status, setStatus] = useState<CameraStatus>('loading');
   const [message, setMessage] = useState('Checking your camera link…');
   const [frameIndex, setFrameIndex] = useState(0);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(30);
   const [error, setError] = useState('');
 
   const stopCamera = useCallback(() => {
@@ -97,9 +99,12 @@ export const DemoCamera = () => {
       setStatus('starting');
       setMessage('Starting your camera…');
 
-      const startResponse = await fetch(`${API_BASE}/demo/session/${token}/start`, { method: 'POST' });
-      const startData = await startResponse.json().catch(() => ({}));
-      if (!startResponse.ok) throw new Error(startData.error || 'The teacher session could not be started.');
+      const sessionResponse = await fetch(`${API_BASE}/demo/session/${token}`);
+      const liveSession = await sessionResponse.json().catch(() => ({}));
+      if (!sessionResponse.ok || liveSession.status !== 'in_progress' || !liveSession.started_at) {
+        throw new Error('The teacher must start the class before camera capture can begin.');
+      }
+      setSession(liveSession);
 
       const media = await navigator.mediaDevices.getUserMedia({
         audio: false,
@@ -111,35 +116,39 @@ export const DemoCamera = () => {
         await videoRef.current.play();
       }
       stoppedRef.current = false;
-      setCountdown(3);
-      setStatus('capturing');
-      setMessage('Camera connected. Keep it steady and point it towards the classroom.');
+      const classStartedAt = new Date(liveSession.started_at).getTime();
+      const classEndsAt = new Date(liveSession.ended_at).getTime();
+      const firstCaptureAt = classStartedAt + FIRST_CAPTURE_DELAY_MS;
+      setStatus('waiting');
+      setMessage('Camera connected. Waiting until 30 seconds after class start for the first capture…');
+      await sleep(Math.max(0, firstCaptureAt - Date.now()));
 
       for (let frame = 1; frame <= TOTAL_FRAMES; frame += 1) {
-        if (stoppedRef.current) return;
+        if (stoppedRef.current || Date.now() >= classEndsAt) break;
+        const scheduledAt = firstCaptureAt + (frame - 1) * CAPTURE_INTERVAL_MS;
+        await sleep(Math.max(0, scheduledAt - Date.now()));
+        if (stoppedRef.current || Date.now() >= classEndsAt) break;
         setFrameIndex(frame - 1);
         setStatus('capturing');
-        setCountdown(3);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        if (stoppedRef.current) return;
-        setStatus('uploading');
-        setMessage(`Sending frame ${frame} of ${TOTAL_FRAMES} securely for processing…`);
+        setMessage(`Capturing frame ${frame} of ${TOTAL_FRAMES}…`);
         await uploadFrame(frame);
         setFrameIndex(frame);
         if (frame < TOTAL_FRAMES) {
           setStatus('waiting');
-          setMessage('Frame received. Preparing the next capture…');
-          await new Promise(resolve => setTimeout(resolve, CAPTURE_INTERVAL_MS));
+          setMessage(`Frame ${frame} received. Next capture is scheduled in 5 seconds.`);
         }
       }
 
-      setMessage('Finishing the camera session…');
+      setStatus('waiting');
+      setMessage('Captures are complete. Waiting for the teacher-selected class duration to finish…');
+      await sleep(Math.max(0, classEndsAt - Date.now()));
+      if (stoppedRef.current) return;
       const completeResponse = await fetch(`${API_BASE}/demo/session/${session.id}/complete`, { method: 'POST' });
       const completeData = await completeResponse.json().catch(() => ({}));
       if (!completeResponse.ok) throw new Error(completeData.error || 'Could not finish the camera session.');
 
       setStatus('completed');
-      setMessage('All frames were sent. You can close this page.');
+      setMessage('Class ended and the five-frame capture window is complete. You can close this page.');
       stopCamera();
     } catch (err: any) {
       setError(err.message || 'Something went wrong while using the camera.');
@@ -198,10 +207,10 @@ export const DemoCamera = () => {
             <>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
                 <div className="mb-2 flex items-center gap-2 font-medium text-white"><ShieldCheck className="h-4 w-4 text-emerald-400" /> Before you start</div>
-                Keep this phone plugged in if possible, allow camera access, and point the rear camera towards the classroom. Images are sent to RollSync for processing; the page does not save them to your gallery.
+                Keep this phone plugged in if possible, allow camera access, and point the rear camera towards the classroom. The camera preview does not upload anything. After the teacher starts the class, tap below to begin capture. The first frame is scheduled 30 seconds after class start, followed by four frames 5 seconds apart.
               </div>
               <button onClick={startCapture} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold hover:bg-blue-500">
-                <Camera className="h-5 w-5" /> Enable camera and start
+                <Camera className="h-5 w-5" /> Enable camera and start capture
               </button>
             </>
           ) : null}
@@ -211,7 +220,7 @@ export const DemoCamera = () => {
           ) : null}
           {status === 'completed' ? <p className="text-center text-sm text-emerald-300">{message}</p> : null}
           {status === 'error' ? <button onClick={() => window.location.reload()} className="w-full rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15">Reload camera link</button> : null}
-          <p className="text-center text-[11px] leading-relaxed text-slate-500">Camera access starts only after you tap the button. Keep the page open until all five frames have been sent.</p>
+          <p className="text-center text-[11px] leading-relaxed text-slate-500">Camera access starts only after you tap the button. The class itself is started separately by the teacher. Keep this page open until the class timer ends.</p>
         </div>
       </section>
     </main>
