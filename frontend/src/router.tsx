@@ -26,7 +26,6 @@ const Timetable = Loadable(lazy(() => import('./pages/dashboard/Timetable').then
 const Reports = Loadable(lazy(() => import('./pages/dashboard/Reports').then(module => ({ default: module.Reports }))));
 const Settings = Loadable(lazy(() => import('./pages/dashboard/Settings').then(module => ({ default: module.Settings }))));
 const LeaveRequests = Loadable(lazy(() => import('./pages/dashboard/LeaveRequests').then(module => ({ default: module.LeaveRequests }))));
-const StudentsList = Loadable(lazy(() => import('./pages/admin/StudentsList').then(module => ({ default: module.StudentsList }))));
 const CameraCapture = Loadable(lazy(() => import('./pages/camera/CameraCapture').then(module => ({ default: module.CameraCapture }))));
 const DemoCamera = Loadable(lazy(() => import('./pages/camera/DemoCamera').then(module => ({ default: module.DemoCamera }))));
 
@@ -50,7 +49,6 @@ export const router = createBrowserRouter([
           { path: '/teacher/live', element: <LiveMonitor /> },
           { path: '/teacher/timetable', element: <Timetable /> },
           { path: '/teacher/reports', element: <Reports /> },
-          { path: '/teacher/students', element: <StudentsList /> },
           { path: '/teacher/leaves', element: <LeaveRequests /> },
           { path: '/teacher/settings', element: <Settings /> }
         ]
