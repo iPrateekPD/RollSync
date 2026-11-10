@@ -123,15 +123,13 @@ router.get('/session/:token', async (req, res) => {
 });
 
 // POST mark processing complete (from backend or after 3 minutes)
-router.post('/session/:id/complete', async (req, res) => {
+router.post('/session/:token/complete', async (req, res) => {
   try {
-    const id = req.params.id as string;
-    
-    // First find all students in roster
-    const roster = await prisma.demo_class_roster.findMany({ where: { session_id: id } });
-    
-    const session = await prisma.demo_class_sessions.findUnique({ where: { id } });
+    const { token } = req.params;
+    const session = await prisma.demo_class_sessions.findUnique({ where: { token } });
     if (!session) return res.status(404).json({ error: 'Session not found' });
+    const id = session.id;
+    const roster = await prisma.demo_class_roster.findMany({ where: { session_id: id } });
     if (session.status !== 'in_progress' && session.status !== 'processing') {
       return res.status(400).json({ error: 'Only a running class can be completed.' });
     }
