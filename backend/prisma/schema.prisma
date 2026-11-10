@@ -135,7 +135,6 @@ model teachers {
   attendance_records_confirmed  attendance_records[]  @relation("RecordConfirmer")
   audit_logs                    audit_logs[]
   demo_class_sessions           demo_class_sessions[]
-  demo_class_rfid_events         demo_class_rfid_events[]
   demo_class_audit_logs         demo_class_audit_logs[]
 }
 
@@ -306,6 +305,25 @@ model demo_class_attendance {
   @@unique([session_id, student_id])
 }
 
+model demo_class_rfid_events {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id            String   @db.Uuid
+  uid                   String
+  student_id            String?  @db.Uuid
+  student_name_snapshot String?
+  classroom             String?
+  event_timestamp       DateTime @db.Timestamptz(6)
+  mqtt_topic            String?
+  raw_payload           Json?
+  processing_status     String   @default("pending")
+  review_reason         String?
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  session               demo_class_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  student               students? @relation(fields: [student_id], references: [id], onDelete: SetNull)
+  @@index([session_id, student_id])
+  @@index([uid])
+  @@index([event_timestamp])
+}
 model demo_class_audit_logs {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   session_id          String   @db.Uuid
