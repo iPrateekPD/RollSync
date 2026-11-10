@@ -108,6 +108,7 @@ model students {
   camera_observations camera_observations[]
   demo_class_roster   demo_class_roster[]
   demo_class_attendance demo_class_attendance[]
+  demo_class_rfid_events demo_class_rfid_events[]
 }
 
 model subjects {
@@ -133,6 +134,7 @@ model teachers {
   attendance_records_confirmed  attendance_records[]  @relation("RecordConfirmer")
   audit_logs                    audit_logs[]
   demo_class_sessions           demo_class_sessions[]
+  demo_class_rfid_events         demo_class_rfid_events[]
   demo_class_audit_logs         demo_class_audit_logs[]
 }
 
@@ -154,6 +156,7 @@ model timetable {
   teachers     teachers  @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
   
   attendance_sessions attendance_sessions[]
+  demo_class_sessions demo_class_sessions[]
   
   @@index([teacher_id])
   @@index([day])
@@ -240,6 +243,7 @@ model demo_class_sessions {
   teacher_id          String   @db.Uuid
   section             String   @default("SEC B")
   classroom           String   @default("RDB 6")
+  subject_id          String?  @db.Uuid
   duration_minutes    Int      @default(3)
   status              String   @default("waiting") // waiting, in_progress, processing, review_ready, confirmed
   token               String   @unique
@@ -249,6 +253,7 @@ model demo_class_sessions {
   created_at          DateTime @default(now()) @db.Timestamptz(6)
 
   teachers            teachers @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  subjects            subjects? @relation(fields: [subject_id], references: [id], onDelete: SetNull)
   demo_class_roster   demo_class_roster[]
   demo_class_captures demo_class_captures[]
   demo_class_attendance demo_class_attendance[]
