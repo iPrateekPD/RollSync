@@ -80,13 +80,14 @@ router.post('/session', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Choose a valid section, classroom, and duration (1–180 minutes).' });
     }
     if (subject_id && !(await prisma.subjects.findUnique({ where: { id: subject_id } }))) return res.status(400).json({ error: 'Selected subject was not found.' });
+    const normalizedClassroom = classroom.trim().replace(/[^a-zA-Z0-9_-]/g, '-');
     const token = crypto.randomBytes(24).toString('hex');
 
     const session = await prisma.demo_class_sessions.create({
       data: {
         teacher_id: teacherId,
         section,
-        classroom: classroom.trim(),
+        classroom: normalizedClassroom,
         subject_id: subject_id || null,
         duration_minutes: duration,
         status: 'waiting',
