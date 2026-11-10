@@ -35,8 +35,7 @@ export const TeacherDashboard = () => {
     const loadClasses = async () => {
       if (user) {
         setIsLoadingClasses(true);
-        const teacherName = user.firstName ? `${user.firstName} ${user.lastName}` : (user.email || 'Dr. Jitendra Kumar');
-        const { data } = await fetchTodayClasses(teacherName);
+        const { data } = await fetchTodayClasses();
         if (data && data.classes) {
           // Process classes to determine continuous classes
           const processedClasses = data.classes.map((cls: any, index: number, arr: any[]) => {
