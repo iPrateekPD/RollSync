@@ -101,9 +101,11 @@ export const TeacherDashboard = () => {
     return matchesSection && matchesSearch;
   });
 
-  const getAttendancePercent = (roll: string) => {
-    const num = parseInt(roll.replace(/[^0-9]/g, '') || '0');
-    return (75 + (num % 25)).toFixed(1);
+  const classCounts = {
+    total: classes.length,
+    live: classes.filter((cls: any) => cls.status === 'LIVE').length,
+    review: classes.filter((cls: any) => cls.status === 'REVIEW').length,
+    confirmed: classes.filter((cls: any) => cls.status === 'CONFIRMED').length,
   };
 
   const startDemo = async (cls: any) => {
@@ -200,15 +202,40 @@ export const TeacherDashboard = () => {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 max-w-5xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto">
       
       {/* Header */}
-      <div>
-        <h1 className="text-[32px] font-semibold text-[#111827] tracking-tight">Today's Classes</h1>
-        <p className="mt-2 text-[15px] text-[#667085]">{currentDate}</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-[#0B65FE] mb-2">TEACHER WORKSPACE</p>
+          <h1 className="text-3xl sm:text-[36px] font-semibold text-[#101828] tracking-tight">Good day{user?.firstName ? ', ' + user.firstName : ''} 👋</h1>
+          <p className="mt-2 text-sm text-[#667085]">{currentDate} <span className="mx-1.5">·</span> Here’s your teaching schedule.</p>
+        </div>
+        <div className="text-sm text-[#667085]">Your classes at a glance</div>
       </div>
 
-      {/* Classes Row */}
+      {/* At-a-glance summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Today’s classes', value: classCounts.total, detail: 'Scheduled for today', tone: 'text-[#101828]', dot: 'bg-[#98A2B3]' },
+          { label: 'Live now', value: classCounts.live, detail: 'Currently in progress', tone: 'text-[#D92D20]', dot: 'bg-[#F04438]' },
+          { label: 'Needs review', value: classCounts.review, detail: 'Awaiting confirmation', tone: 'text-[#B54708]', dot: 'bg-[#F79009]' },
+          { label: 'Confirmed', value: classCounts.confirmed, detail: 'Attendance submitted', tone: 'text-[#027A48]', dot: 'bg-[#12B76A]' },
+        ].map((item) => (
+          <div key={item.label} className="rounded-2xl border border-[#EAECF0] bg-white p-4 sm:p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <div className="flex items-center gap-2 text-[13px] font-medium text-[#667085]"><span className={'h-2 w-2 rounded-full ' + item.dot} />{item.label}</div>
+            <div className={'mt-3 text-3xl font-semibold tracking-tight ' + item.tone}>{item.value}</div>
+            <div className="mt-1 text-xs text-[#98A2B3]">{item.detail}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Today’s schedule */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div><h2 className="text-lg font-semibold text-[#101828]">Today’s schedule</h2><p className="text-sm text-[#667085] mt-1">Your classes and attendance activity</p></div>
+          <span className="text-xs font-medium text-[#667085] bg-[#F2F4F7] px-3 py-1.5 rounded-full">{classes.length} classes</span>
+        </div>
       {isLoadingClasses ? (
         <div className="h-40 flex items-center justify-center bg-white rounded-[16px] border border-[#E5E7EB]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0B65FE]"></div>
@@ -219,9 +246,9 @@ export const TeacherDashboard = () => {
           <p>No classes assigned for you today.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {classes.map((cls) => (
-            <div key={cls.id} className="bg-white p-6 rounded-[16px] border border-[#E5E7EB] shadow-sm flex flex-col">
+            <div key={cls.id} className="bg-white p-5 sm:p-6 rounded-2xl border border-[#EAECF0] shadow-[0_1px_2px_rgba(16,24,40,0.04)] flex flex-col hover:border-[#D0D5DD] transition-colors">
               <div className="text-[13px] font-medium text-[#0B65FE] mb-2">{cls.start_time} – {cls.end_time}</div>
               <h2 className="text-[18px] font-semibold text-[#111827] leading-tight mb-1">{cls.subjects?.subject_name}</h2>
               
@@ -242,10 +269,11 @@ export const TeacherDashboard = () => {
           ))}
         </div>
       )}
+      </section>
 
       {/* Students Section */}
-      <div className="pt-6 border-t border-[#E5E7EB]">
-        <h2 className="text-[20px] font-semibold text-[#111827] mb-6">Students</h2>
+      <div className="pt-7 border-t border-[#EAECF0]">
+        <div className="mb-5"><h2 className="text-lg font-semibold text-[#101828]">Student directory</h2><p className="text-sm text-[#667085] mt-1">Find students by name or roll number.</p></div>
         
         {/* Section Switcher */}
         <div className="flex items-center gap-2 p-1 bg-[#F3F4F6] rounded-[10px] w-fit mb-6">
@@ -304,13 +332,7 @@ export const TeacherDashboard = () => {
                         <div className="text-[13px] text-[#667085] mt-0.5 font-mono">{student.roll_number}</div>
                       </div>
                     </div>
-                    <div className="text-right flex items-center gap-4">
-                      <div>
-                        <div className="text-[14px] font-semibold text-[#111827]">{getAttendancePercent(student.roll_number)}%</div>
-                        <div className="text-[11px] text-[#667085] uppercase tracking-wide">Attendance</div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-[#D1D5DB] group-hover:text-[#0B65FE] transition-colors" />
-                    </div>
+                    <div className="flex items-center gap-3"><span className="text-xs text-[#667085] hidden sm:block">View profile</span><ChevronRight className="w-5 h-5 text-[#D1D5DB] group-hover:text-[#0B65FE] transition-colors" /></div>
                   </div>
                 );
               })
@@ -341,31 +363,13 @@ export const TeacherDashboard = () => {
               <h4 className="text-[14px] font-semibold text-[#111827] mb-3">Overall Attendance</h4>
               <div className="flex items-center justify-between p-4 rounded-[12px] border border-[#E5E7EB]">
                 <div className="text-[14px] font-medium text-[#667085]">Total Classes Attended</div>
-                <div className="text-[16px] font-bold text-[#0B65FE]">
-                  {getAttendancePercent(selectedStudent.roll_number)}%
-                </div>
+                <div className="text-sm font-medium text-[#667085]">Not available</div>
               </div>
             </div>
 
             <div>
               <h4 className="text-[14px] font-semibold text-[#111827] mb-3">Recent Classes</h4>
-              <div className="space-y-2">
-                {[
-                  { name: 'Digital Signal Processing', status: 'Present', date: 'Today, 10:20 AM' },
-                  { name: 'Microcontrollers', status: 'Present', date: 'Yesterday, 09:00 AM' },
-                  { name: 'Digital VLSI Design', status: 'Absent', date: 'Monday, 08:00 AM' },
-                ].map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-[10px] bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors">
-                    <div>
-                      <div className="text-[14px] font-medium text-[#111827]">{c.name}</div>
-                      <div className="text-[12px] text-[#667085] mt-0.5">{c.date}</div>
-                    </div>
-                    <div className={`text-[13px] font-medium ${c.status === 'Present' ? 'text-[#065F46]' : 'text-[#991B1B]'}`}>
-                      {c.status}
-                    </div>
-                  </div>
-                ))}
-              </div>
+<div className="rounded-xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] p-4 text-sm text-[#667085]">Attendance history will appear here once connected to the student attendance records.</div>
             </div>
             
             <button
