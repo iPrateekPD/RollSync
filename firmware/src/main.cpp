@@ -48,10 +48,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   for (unsigned int i = 0; i < length; i++) message += (char)payload[i];
   JsonDocument command;
   if (deserializeJson(command, message)) return;
-  if (String(command[\"command\"] | \"\") != \"rfid\") return;
-  rfidEnabled = command[\"enabled\"] | false;
-  displayStatus(rfidEnabled ? \"RFID: ACTIVE\" : \"RFID: PAUSED\");
-  Serial.println(rfidEnabled ? \"RFID reader enabled\" : \"RFID reader disabled\");
+  if (String(command["command"] | "") != "rfid") return;
+  rfidEnabled = command["enabled"] | false;
+  displayStatus(rfidEnabled ? "RFID: ACTIVE" : "RFID: PAUSED");
+  Serial.println(rfidEnabled ? "RFID reader enabled" : "RFID reader disabled");
 }
 
 void setupOLED() {
@@ -97,7 +97,7 @@ void reconnectMQTT() {
   while (!mqttClient.connected()) {
     displayStatus("Connecting to MQTT...");
     // Create LWT payload
-    String lwtPayload = "{\"status\":\"offline\",\"reason\":\"lwt\",\"timestamp\":";
+    String lwtPayload = "{"status":"offline","reason":"lwt","timestamp":";
     lwtPayload += String(millis()) + "}";
     
     if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD, TOPIC_STATUS, 1, true, lwtPayload.c_str())) {
@@ -107,7 +107,7 @@ void reconnectMQTT() {
       // Start paused; teacher explicitly enables the reader when class begins.
       rfidEnabled = false;
       // Send online status
-      String onlinePayload = "{\"status\":\"online\",\"timestamp\":";
+      String onlinePayload = "{"status":"online","timestamp":";
       onlinePayload += String(millis()) + "}";
       mqttClient.publish(TOPIC_STATUS, onlinePayload.c_str(), true);
       
