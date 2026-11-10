@@ -96,12 +96,21 @@ export const TeacherDashboard = () => {
         },
         body: JSON.stringify({
           timetable_id: cls.id,
-          subject_id: cls.subject_id
+          subject_id: cls.subject_id,
+          section: cls.section || 'SEC B',
+          classroom: cls.room || 'RDB 6',
+          duration_minutes: 2
         })
       });
       const data = await res.json();
       if (res.ok) {
-        setDemoSession(data);
+        const startRes = await fetch(`/api/demo/session/${data.token}/start`, {
+          method: 'POST',
+          headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+        });
+        const started = await startRes.json();
+        if (!startRes.ok) throw new Error(started.error || 'Could not start the class timer.');
+        setDemoSession(started);
         setDemoModalOpen(true);
       } else {
         console.error("Failed to start demo", data);
@@ -356,11 +365,11 @@ export const TeacherDashboard = () => {
         {demoSession && (
           <div className="space-y-6 flex flex-col items-center">
             <p className="text-[14px] text-center text-[#667085]">
-              Scan this QR code with a smartphone to start the 5-minute local AI attendance tracking demo.
+              Class started. Scan this QR code on the classroom phone, then explicitly tap Start Capture. The class timer runs for 2 minutes.
             </p>
             <div className="p-4 bg-white border border-[#E5E7EB] rounded-[16px] shadow-sm">
               <QRCodeSVG 
-                value={`${window.location.origin}/camera/${demoSession.token}`}
+                value={`${window.location.origin}/camera/demo/${demoSession.token}`}
                 size={200} 
               />
             </div>
@@ -370,7 +379,7 @@ export const TeacherDashboard = () => {
                 <input 
                   type="text" 
                   readOnly 
-                  value={`${window.location.origin}/camera/${demoSession.token}`}
+                  value={`${window.location.origin}/camera/demo/${demoSession.token}`}
                   className="flex-1 h-10 px-3 border border-[#E5E7EB] rounded-l-[8px] bg-[#F9FAFB] text-[13px] text-[#667085] focus:outline-none"
                 />
                 <button 
