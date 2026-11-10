@@ -1,25 +1,24 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { apiClient } from '../api/client';
+import { supabase } from '../lib/supabase';
 
 export type Role = 'ADMIN' | 'TEACHER' | 'STUDENT';
-
 export interface User {
   id: string;
+  authUserId: string;
   email: string;
   role: Role;
-  profileId?: string; // Maps to studentId or teacherId
+  profileId?: string;
   firstName?: string;
   lastName?: string;
 }
-
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (accessToken: string, refreshToken: string, user: User) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<User>;
+  logout: () => Promise<void>;
 }
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -27,59 +26,72 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        if (token === 'mock-access-token') {
-          // Restore mock session
-          setUser({
-            id: 'mock-teacher-1',
-            email: 'teacher@rollsync.com',
-            role: 'TEACHER',
-            firstName: 'Reema',
-            lastName: 'Angelin'
-          });
-        } else {
-          try {
-            const response = await apiClient.get('/auth/me');
-            setUser(response.data);
-          } catch (error) {
-            console.error('Failed to restore session:', error);
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-          }
+    let mounted = true;
+    const restore = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const response = await apiClient.get<User>('/auth/me');
+          if (mounted) setUser(response.data);
         }
+      } catch (error) {
+        console.error('Failed to restore RollSync session:', error);
+        await supabase.auth.signOut();
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-      setIsLoading(false);
     };
+    void restore();
 
-    initAuth();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      // Avoid awaiting network work inside Supabase's auth event callback.
+      window.setTimeout(() => {
+        void apiClient.get<User>('/auth/me')
+          .then(response => { if (mounted) setUser(response.data); })
+          .catch(async error => {
+            console.error('Unable to load RollSync profile:', error);
+            await supabase.auth.signOut();
+            if (mounted) setUser(null);
+          })
+          .finally(() => { if (mounted) setIsLoading(false); });
+      }, 0);
+    });
+    return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
-  const login = (accessToken: string, refreshToken: string, userData: User) => {
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(userData);
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(), password,
+    });
+    if (error) throw error;
+    if (!data.session) throw new Error('No active Supabase session was returned.');
+    try {
+      const response = await apiClient.get<User>('/auth/me');
+      setUser(response.data);
+      return response.data;
+    } catch (error) {
+      await supabase.auth.signOut();
+      throw error;
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    window.location.href = '/login';
+    window.location.assign('/login');
   };
 
-  return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, isLoading, login, logout }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
