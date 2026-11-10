@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../config/prisma';
 import { authenticate } from '../middleware/auth';
 import crypto from 'crypto';
+import { publishRfidControl } from '../mqtt';
 
 const router = Router();
 
@@ -43,12 +44,13 @@ router.post('/session', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Demo session already exists', session: existing });
     }
 
-    const { section = 'SEC B', classroom = 'RDB 6', duration_minutes = 2 } = req.body || {};
+    const { section = 'SEC B', classroom = 'RDB 6', duration_minutes = 2, subject_id = null } = req.body || {};
     const allowedSections = ['SEC A', 'SEC B'];
     const duration = Number(duration_minutes);
     if (!allowedSections.includes(section) || typeof classroom !== 'string' || !classroom.trim() || !Number.isInteger(duration) || duration < 1 || duration > 180) {
       return res.status(400).json({ error: 'Choose a valid section, classroom, and duration (1–180 minutes).' });
     }
+    if (subject_id && !(await prisma.subjects.findUnique({ where: { id: subject_id } }))) return res.status(400).json({ error: 'Selected subject was not found.' });
     const token = crypto.randomBytes(24).toString('hex');
 
     const session = await prisma.demo_class_sessions.create({
@@ -56,6 +58,7 @@ router.post('/session', authenticate, async (req, res) => {
         teacher_id: teacherId,
         section,
         classroom: classroom.trim(),
+        subject_id: subject_id || null,
         duration_minutes: duration,
         status: 'waiting',
         token
@@ -103,6 +106,11 @@ router.post('/session/:token/start', authenticate, async (req, res) => {
         ended_at: new Date(Date.now() + session.duration_minutes * 60000)
       }
     });
+    try {
+      publishRfidControl(updated.classroom, true);
+    } catch (mqttError) {
+      console.error('[DEMO] Class started but RFID command could not be sent:', mqttError);
+    }
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -141,6 +149,8 @@ router.post('/session/:token/complete', async (req, res) => {
       where: { session_id: id, status: 'success' }
     });
     const recognizedByStudent = new Map<string, number>();
+    const rfidEvents = await prisma.demo_class_rfid_events.findMany({ where: { session_id: id, processing_status: 'matched' } });
+    const rfidStudents = new Set(rfidEvents.map(event => event.student_id).filter((value): value is string => Boolean(value)));
     captures.forEach((capture: any) => {
       const results = Array.isArray(capture.results) ? capture.results : [];
       const recognizedThisFrame = new Set<string>();
@@ -152,7 +162,8 @@ router.post('/session/:token/complete', async (req, res) => {
 
     for (const student of roster) {
       const recognized = recognizedByStudent.get(student.student_id) || 0;
-      const classification = recognized >= 3 ? 'Present' : 'Needs Review';
+      const hasRfid = rfidStudents.has(student.student_id);
+      const classification = recognized >= 3 && hasRfid ? 'Present' : 'Needs Review';
       await prisma.demo_class_attendance.upsert({
         where: { session_id_student_id: { session_id: id, student_id: student.student_id } },
         create: { session_id: id, student_id: student.student_id, valid_frames: captures.length, frames_recognized: recognized, ai_classification: classification },
@@ -160,11 +171,8 @@ router.post('/session/:token/complete', async (req, res) => {
       });
     }
 
-    const updated = await prisma.demo_class_sessions.update({
-      where: { id },
-      data: { status: 'review_ready' }
-    });
-
+    const updated = await prisma.demo_class_sessions.update({ where: { id }, data: { status: 'review_ready' } });
+    try { publishRfidControl(session.classroom, false); } catch (mqttError) { console.error('[DEMO] Could not disable RFID reader:', mqttError); }
     res.json(updated);
   } catch (error) {
     console.error(error);
@@ -183,9 +191,8 @@ router.get('/session/:id/attendance', authenticate, async (req, res) => {
       where: { session_id: id },
       include: { student: true }
     });
-    const attendance = await prisma.demo_class_attendance.findMany({
-      where: { session_id: id }
-    });
+    const attendance = await prisma.demo_class_attendance.findMany({ where: { session_id: id } });
+    const rfidEvents = await prisma.demo_class_rfid_events.findMany({ where: { session_id: id } });
 
     const results = roster.map((r: any) => {
       const att = attendance.find((a: any) => a.student_id === r.student_id);
@@ -197,7 +204,9 @@ router.get('/session/:id/attendance', authenticate, async (req, res) => {
         valid_frames: att?.valid_frames || 0,
         ai_classification: att?.ai_classification || 'Needs Review',
         teacher_decision: att?.teacher_decision || null,
-        review_status: att?.review_status || 'pending'
+        review_status: att?.review_status || 'pending',
+        rfid_taps: rfidEvents.filter(event => event.student_id === r.student_id).length,
+        evidence: rfidEvents.some(event => event.student_id === r.student_id) ? (att?.frames_recognized ? 'RFID + face' : 'RFID only') : (att?.frames_recognized ? 'Face only' : 'No evidence')
       };
     });
 
@@ -232,10 +241,8 @@ router.post('/session/:id/confirm', authenticate, async (req, res) => {
       });
     }
 
-    await prisma.demo_class_sessions.update({
-      where: { id },
-      data: { status: 'confirmed', confirmed_at: new Date() }
-    });
+    await prisma.demo_class_sessions.update({ where: { id }, data: { status: 'confirmed', confirmed_at: new Date() } });
+    try { publishRfidControl(session.classroom, false); } catch (mqttError) { console.error('[DEMO] Could not disable RFID reader after confirmation:', mqttError); }
 
     res.json({ success: true });
   } catch (error) {
