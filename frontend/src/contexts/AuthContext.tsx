@@ -32,6 +32,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           const response = await apiClient.get<User>('/auth/me');
+          if (response.data.role !== 'TEACHER') {
+            await supabase.auth.signOut();
+            throw new Error('This portal is available to teacher accounts only.');
+          }
           if (mounted) setUser(response.data);
         }
       } catch (error) {
@@ -53,7 +57,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Avoid awaiting network work inside Supabase's auth event callback.
       window.setTimeout(() => {
         void apiClient.get<User>('/auth/me')
-          .then(response => { if (mounted) setUser(response.data); })
+          .then(async response => {
+            if (response.data.role !== 'TEACHER') {
+              await supabase.auth.signOut();
+              throw new Error('This portal is available to teacher accounts only.');
+            }
+            if (mounted) setUser(response.data);
+          })
           .catch(async error => {
             console.error('Unable to load RollSync profile:', error);
             await supabase.auth.signOut();
@@ -73,6 +83,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!data.session) throw new Error('No active Supabase session was returned.');
     try {
       const response = await apiClient.get<User>('/auth/me');
+      if (response.data.role !== 'TEACHER') {
+        await supabase.auth.signOut();
+        throw new Error('This portal is available to teacher accounts only.');
+      }
       setUser(response.data);
       return response.data;
     } catch (error) {
