@@ -13,11 +13,12 @@
 #define MQTT_CLIENT_ID "ESP32_RollSync_01"
 
 // RollSync Topic Configuration
-#define CLASSROOM_ID "Room-101"
+#define CLASSROOM_ID "RDB-6"
 #define TOPIC_RFID "attendance/" CLASSROOM_ID "/esp32/rfid"
 #define TOPIC_BLE "attendance/" CLASSROOM_ID "/esp32/ble"
 #define TOPIC_HEARTBEAT "attendance/" CLASSROOM_ID "/esp32/heartbeat"
 #define TOPIC_STATUS "attendance/" CLASSROOM_ID "/esp32/status"
+#define TOPIC_COMMAND "attendance/" CLASSROOM_ID "/esp32/command"
 
 // Hardware Pins (ESP32-S3)
 // RFID RC522 (SPI)
