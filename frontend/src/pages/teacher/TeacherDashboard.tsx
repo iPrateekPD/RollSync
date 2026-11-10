@@ -408,17 +408,23 @@ export const TeacherDashboard = () => {
                   className="flex-1 h-10 px-3 border border-[#E5E7EB] rounded-l-[8px] bg-[#F9FAFB] text-[13px] text-[#667085] focus:outline-none"
                 />
                 <button 
-                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/camera/${demoSession.token}`)}
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/camera/demo/${demoSession.token}`)}
                   className="h-10 px-4 bg-[#0B65FE] text-white text-[13px] font-medium rounded-r-[8px] hover:bg-[#004BCC]"
                 >
                   Copy
                 </button>
               </div>
             </div>
+            {demoSession.status === 'review_ready' && (
+              <button onClick={() => navigate('/teacher/attendance', { state: { demoSessionId: demoSession.id } })}
+                className="w-full flex justify-center items-center h-11 px-4 rounded-[10px] text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700">
+                REVIEW ATTENDANCE
+              </button>
+            )}
             <button
               onClick={() => {
                 // Here we could navigate to a dashboard to track the session progress
-                window.open(`${window.location.origin}/camera/${demoSession.token}`, '_blank');
+                window.open(`${window.location.origin}/camera/demo/${demoSession.token}`, '_blank');
               }}
               className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[14px] font-medium text-white bg-[#111827] hover:bg-[#374151]"
             >
