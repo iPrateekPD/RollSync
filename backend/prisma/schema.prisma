@@ -118,6 +118,7 @@ model subjects {
   created_at          DateTime              @default(now()) @db.Timestamptz(6)
   attendance_sessions attendance_sessions[]
   timetable           timetable[]
+  demo_class_sessions demo_class_sessions[]
 }
 
 model teachers {
