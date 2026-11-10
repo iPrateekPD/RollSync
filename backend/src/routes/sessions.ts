@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../supabase';
+import { prisma } from '../config/prisma';
+import { authenticate, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -77,59 +79,66 @@ router.post('/:id/end', async (req, res) => {
   res.json(data);
 });
 // POST /api/sessions/:id/confirm
-router.post('/:id/confirm', async (req, res) => {
+router.post('/:id/confirm', authenticate, requireRole(['TEACHER']), async (req, res) => {
   const { id } = req.params;
-  const { records, teacher_id } = req.body; // records: { student_id, status }[]
-  
-  if (!records || !teacher_id) {
-    return res.status(400).json({ error: 'Missing records or teacher_id' });
+  const { records } = req.body || [];
+  const teacherId = req.user?.teacherId;
+
+  if (!teacherId || !Array.isArray(records)) {
+    return res.status(400).json({ error: 'A valid attendance record list is required.' });
+  }
+
+  const allowedStatuses = new Set(['present', 'absent', 'late', 'excused']);
+  if (records.some((record: any) =>
+    !record || typeof record.student_id !== 'string' || !allowedStatuses.has(record.status)
+  )) {
+    return res.status(400).json({ error: 'Attendance records contain an invalid student or status.' });
   }
 
   try {
-    // End session if not ended, and set confirmed
-    await supabase.from('attendance_sessions').update({ 
-      active: false, 
-      status: 'completed',
-      confirmed: true,
-      confirmed_by: teacher_id,
-      confirmed_at: new Date().toISOString()
-    }).eq('id', id);
-
-    // Get existing records
-    const { data: existingRecords } = await supabase.from('attendance_records').select('id, student_id').eq('session_id', id);
-    const existingMap = new Map(existingRecords?.map(r => [r.student_id, r.id]) || []);
-
-    const now = new Date().toISOString();
-
-    for (const record of records) {
-      if (existingMap.has(record.student_id)) {
-        await supabase.from('attendance_records').update({
-          status: record.status,
-          teacher_confirmed: true,
-          confirmed_by: teacher_id,
-          confirmed_at: now,
-          updated_at: now
-        }).eq('id', existingMap.get(record.student_id));
-      } else {
-        await supabase.from('attendance_records').insert({
-          session_id: id,
-          student_id: record.student_id,
-          status: record.status,
-          source: 'manual',
-          timestamp: now,
-          teacher_confirmed: true,
-          confirmed_by: teacher_id,
-          confirmed_at: now
-        });
-      }
+    const session = await prisma.attendance_sessions.findUnique({
+      where: { id },
+      include: { timetable: { select: { teacher_id: true } } },
+    });
+    if (!session || !session.timetable) {
+      return res.status(404).json({ error: 'Attendance session is not linked to a timetable class.' });
+    }
+    if (session.timetable.teacher_id !== teacherId) {
+      return res.status(403).json({ error: 'You cannot confirm attendance for another teacher’s class.' });
     }
 
-    // TODO: Write to audit_logs
+    const now = new Date().toISOString();
+    const { error: sessionError } = await supabase.from('attendance_sessions').update({
+      active: false,
+      status: 'completed',
+      confirmed: true,
+      confirmed_by: teacherId,
+      confirmed_at: now,
+    }).eq('id', id);
+    if (sessionError) throw sessionError;
 
-    res.json({ success: true });
+    if (records.length) {
+      const rows = records.map((record: any) => ({
+        session_id: id,
+        student_id: record.student_id,
+        status: record.status,
+        source: 'manual',
+        timestamp: now,
+        teacher_confirmed: true,
+        confirmed_by: teacherId,
+        confirmed_at: now,
+        updated_at: now,
+      }));
+      const { error: recordsError } = await supabase
+        .from('attendance_records')
+        .upsert(rows, { onConflict: 'session_id,student_id' });
+      if (recordsError) throw recordsError;
+    }
+
+    return res.json({ success: true });
   } catch (err: any) {
     console.error('Confirmation error:', err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message || 'Unable to confirm attendance.' });
   }
 });
 

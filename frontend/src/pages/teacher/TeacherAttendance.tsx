@@ -80,7 +80,7 @@ export const TeacherAttendance = () => {
       status: attendanceState[student_id]
     }));
     
-    const { error } = await confirmAttendance(cls.attendance_sessions[0].id, records, user.id);
+    const { error } = await confirmAttendance(cls.attendance_sessions[0].id, records);
     setIsSubmitting(false);
     
     if (!error) {
