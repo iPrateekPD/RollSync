@@ -59,6 +59,7 @@ export const FaceRegistration = () => {
       });
       streamRef.current = stream;
       setStatus('capturing');
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
