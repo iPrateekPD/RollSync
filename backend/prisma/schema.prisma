@@ -257,6 +257,7 @@ model demo_class_sessions {
   demo_class_roster   demo_class_roster[]
   demo_class_captures demo_class_captures[]
   demo_class_attendance demo_class_attendance[]
+  demo_class_rfid_events demo_class_rfid_events[]
 }
 
 model demo_class_roster {
