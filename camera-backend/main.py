@@ -1,10 +1,14 @@
 import os
 import uuid
+import json
+import hmac
+import hashlib
+import base64
 import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from pydantic import BaseModel
@@ -255,40 +259,71 @@ async def process_demo_frame(token: str, capture_number: int, file: UploadFile =
 
     return {"status": "success", "results": results}
 
-@app.post("/api/camera/enroll/{student_id}")
-async def enroll_face(student_id: str, file: UploadFile = File(...)):
-    # Decode image
-    contents = await file.read()
-    nparr = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    
-    if img is None:
-        raise HTTPException(status_code=400, detail="Invalid image")
-        
-    # Detect faces
-    faces = face_app.get(img)
-    if not faces:
-        raise HTTPException(status_code=400, detail="No face detected in the image")
-        
-    if len(faces) > 1:
-        raise HTTPException(status_code=400, detail="Multiple faces detected. Please ensure only the student is in the frame.")
-        
-    face = faces[0]
-    embedding = face.normed_embedding.tolist()
-    
-    # Upsert profile
-    existing_prof = supabase.table("face_profiles").select("*").eq("student_id", student_id).execute()
-    if len(existing_prof.data) > 0:
-        supabase.table("face_profiles").update({
-            "embedding": embedding
-        }).eq("student_id", student_id).execute()
+def verify_enrollment_token(token: str) -> str:
+    secret = os.getenv("FACE_ENROLLMENT_SECRET")
+    if not secret:
+        raise HTTPException(status_code=503, detail="Face enrollment is not configured.")
+    try:
+        encoded_payload, encoded_signature = token.split(".", 1)
+        expected = hmac.new(secret.encode(), encoded_payload.encode(), hashlib.sha256).digest()
+        supplied = base64.urlsafe_b64decode(encoded_signature + "=" * (-len(encoded_signature) % 4))
+        if not hmac.compare_digest(expected, supplied):
+            raise ValueError("Invalid signature")
+        payload_raw = base64.urlsafe_b64decode(encoded_payload + "=" * (-len(encoded_payload) % 4))
+        payload = json.loads(payload_raw)
+        if payload.get("purpose") != "face-enrollment" or int(payload.get("exp", 0)) < int(datetime.datetime.now(datetime.timezone.utc).timestamp()):
+            raise ValueError("Expired or invalid purpose")
+        return str(payload["student_id"])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Enrollment link is invalid or expired.")
+
+
+@app.post("/api/camera/enroll")
+async def enroll_face(token: str = Form(...), files: list[UploadFile] = File(...)):
+    student_id = verify_enrollment_token(token)
+    if len(files) < 3 or len(files) > 5:
+        raise HTTPException(status_code=400, detail="Please submit 3 to 5 face images.")
+
+    embeddings = []
+    for upload in files:
+        if upload.content_type not in ("image/jpeg", "image/png", "image/webp"):
+            raise HTTPException(status_code=415, detail="Only JPEG, PNG or WebP images are accepted.")
+        contents = await upload.read()
+        if not contents or len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Each image must be smaller than 5 MB.")
+        image_array = np.frombuffer(contents, np.uint8)
+        img = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        if img is None:
+            raise HTTPException(status_code=400, detail="One of the submitted images is invalid.")
+        height, width = img.shape[:2]
+        if width < 240 or height < 240:
+            raise HTTPException(status_code=400, detail="Please use clearer, higher-resolution images.")
+        faces = face_app.get(img)
+        if len(faces) != 1:
+            raise HTTPException(status_code=400, detail="Each image must contain exactly one clearly visible face.")
+        embeddings.append(faces[0].normed_embedding.astype(np.float32))
+        del img, image_array, contents
+
+    if len(embeddings) < 3:
+        raise HTTPException(status_code=400, detail="At least three valid face captures are required.")
+
+    # Average the captures and re-normalize to produce one stable profile vector.
+    average = np.mean(np.stack(embeddings), axis=0)
+    norm = float(np.linalg.norm(average))
+    if not np.isfinite(norm) or norm == 0:
+        raise HTTPException(status_code=422, detail="Could not create a stable face profile. Please recapture.")
+    embedding = (average / norm).astype(float).tolist()
+
+    existing = supabase.table("face_profiles").select("student_id").eq("student_id", student_id).limit(1).execute()
+    if existing.data:
+        supabase.table("face_profiles").update({"embedding": embedding}).eq("student_id", student_id).execute()
+        action = "updated"
     else:
-        supabase.table("face_profiles").insert({
-            "student_id": student_id,
-            "embedding": embedding
-        }).execute()
-        
-    return {"status": "success", "message": "Face trained successfully!"}
+        supabase.table("face_profiles").insert({"student_id": student_id, "embedding": embedding}).execute()
+        action = "created"
+
+    return {"status": "success", "message": "Face profile registered successfully.", "captures_used": len(embeddings), "profile_action": action}
+
 
 @app.post("/api/camera/session/{token}/finalize")
 async def finalize_session(token: str):

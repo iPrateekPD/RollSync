@@ -21,6 +21,28 @@ export const TeacherDashboard = () => {
   const [demoSession, setDemoSession] = useState<any>(null);
   const [demoLoading, setDemoLoading] = useState(false);
 
+  useEffect(() => {
+    if (!demoModalOpen || !demoSession) return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const authToken = localStorage.getItem('token');
+        const response = await fetch('/api/demo/session', {
+          headers: { ...(authToken ? { Authorization: 'Bearer ' + authToken } : {}) }
+        });
+        if (response.ok) {
+          const latest = await response.json();
+          if (!cancelled && latest && latest.id === demoSession.id) setDemoSession(latest);
+        }
+      } catch (error) {
+        console.warn('[DEMO] Could not refresh class status', error);
+      }
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 3000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [demoModalOpen, demoSession?.id]);
+
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   useEffect(() => {
@@ -96,12 +118,21 @@ export const TeacherDashboard = () => {
         },
         body: JSON.stringify({
           timetable_id: cls.id,
-          subject_id: cls.subject_id
+          subject_id: cls.subject_id,
+          section: cls.section || 'SEC B',
+          classroom: cls.room || 'RDB 6',
+          duration_minutes: 2
         })
       });
       const data = await res.json();
       if (res.ok) {
-        setDemoSession(data);
+        const startRes = await fetch(`/api/demo/session/${data.token}/start`, {
+          method: 'POST',
+          headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+        });
+        const started = await startRes.json();
+        if (!startRes.ok) throw new Error(started.error || 'Could not start the class timer.');
+        setDemoSession(started);
         setDemoModalOpen(true);
       } else {
         console.error("Failed to start demo", data);
@@ -356,11 +387,14 @@ export const TeacherDashboard = () => {
         {demoSession && (
           <div className="space-y-6 flex flex-col items-center">
             <p className="text-[14px] text-center text-[#667085]">
-              Scan this QR code with a smartphone to start the 5-minute local AI attendance tracking demo.
+              Class started. Scan this QR code on the classroom phone, then explicitly tap Start Capture. The class timer runs for {demoSession.duration_minutes || 2} minutes.
             </p>
+            <div className="w-full rounded-xl bg-[#F3F4F6] px-4 py-3 text-sm text-center text-[#344054]">
+              Class status: <strong>{(demoSession.status || 'waiting').replace('_', ' ').toUpperCase()}</strong>
+            </div>
             <div className="p-4 bg-white border border-[#E5E7EB] rounded-[16px] shadow-sm">
               <QRCodeSVG 
-                value={`${window.location.origin}/camera/${demoSession.token}`}
+                value={`${window.location.origin}/camera/demo/${demoSession.token}`}
                 size={200} 
               />
             </div>
@@ -370,21 +404,27 @@ export const TeacherDashboard = () => {
                 <input 
                   type="text" 
                   readOnly 
-                  value={`${window.location.origin}/camera/${demoSession.token}`}
+                  value={`${window.location.origin}/camera/demo/${demoSession.token}`}
                   className="flex-1 h-10 px-3 border border-[#E5E7EB] rounded-l-[8px] bg-[#F9FAFB] text-[13px] text-[#667085] focus:outline-none"
                 />
                 <button 
-                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/camera/${demoSession.token}`)}
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/camera/demo/${demoSession.token}`)}
                   className="h-10 px-4 bg-[#0B65FE] text-white text-[13px] font-medium rounded-r-[8px] hover:bg-[#004BCC]"
                 >
                   Copy
                 </button>
               </div>
             </div>
+            {demoSession.status === 'review_ready' && (
+              <button onClick={() => navigate('/teacher/attendance', { state: { demoSessionId: demoSession.id } })}
+                className="w-full flex justify-center items-center h-11 px-4 rounded-[10px] text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700">
+                REVIEW ATTENDANCE
+              </button>
+            )}
             <button
               onClick={() => {
                 // Here we could navigate to a dashboard to track the session progress
-                window.open(`${window.location.origin}/camera/${demoSession.token}`, '_blank');
+                window.open(`${window.location.origin}/camera/demo/${demoSession.token}`, '_blank');
               }}
               className="w-full flex justify-center items-center h-11 px-4 border border-transparent rounded-[10px] shadow-sm text-[14px] font-medium text-white bg-[#111827] hover:bg-[#374151]"
             >

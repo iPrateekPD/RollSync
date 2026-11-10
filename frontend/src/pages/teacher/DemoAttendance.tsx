@@ -1,224 +1,151 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Check, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+
+type Decision = 'Present' | 'Absent' | 'Review';
+type StudentResult = {
+  id: string; name: string; roll_number: string; frames_recognized: number;
+  valid_frames: number; ai_classification: string; teacher_decision: string | null;
+  review_status: string; rfid_taps: number;
+  evidence: 'RFID + face' | 'RFID only' | 'Face only' | 'No evidence';
+};
 
 export const DemoAttendance = ({ demoSessionId }: { demoSessionId: string }) => {
   const navigate = useNavigate();
-  
-  const [students, setStudents] = useState<any[]>([]);
-  const [attendanceState, setAttendanceState] = useState<Record<string, 'present' | 'absent' | 'exception'>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [students, setStudents] = useState<StudentResult[]>([]);
+  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
-    const loadDemoData = async () => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError('');
       try {
         const token = localStorage.getItem('token');
-        const headers = { 'Authorization': `Bearer ${token}` };
-        
-        // Load session
-        await fetch(`/api/demo/session/${demoSessionId}/stats`, { headers });
-
-        // Load roster
-        const rosterRes = await fetch(`/api/demo/session/${demoSessionId}/roster`, { headers });
-        const rosterData = await rosterRes.json();
-        
-        // Load demo attendance decisions
-        const attRes = await fetch(`/api/demo/session/${demoSessionId}/attendance`, { headers });
-        const attData = await attRes.json();
-
-        setStudents(rosterData.roster.map((r: any) => r.students));
-        
-        const newState: Record<string, 'present' | 'absent' | 'exception'> = {};
-        attData.attendance.forEach((a: any) => {
-          if (a.ai_decision === 'PRESENT') newState[a.student_id] = 'present';
-          else if (a.ai_decision === 'MAYBE') newState[a.student_id] = 'exception';
-          else newState[a.student_id] = 'absent';
+        const response = await fetch('/api/demo/session/' + demoSessionId + '/attendance', {
+          headers: { Authorization: 'Bearer ' + token }
         });
-
-        // Set missing to absent
-        rosterData.roster.forEach((r: any) => {
-          if (!newState[r.student_id]) newState[r.student_id] = 'absent';
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load attendance.');
+        if (cancelled) return;
+        const rows: StudentResult[] = Array.isArray(data) ? data : [];
+        setStudents(rows);
+        const initial: Record<string, Decision> = {};
+        rows.forEach(student => {
+          initial[student.id] = (student.teacher_decision as Decision) ||
+            (student.ai_classification === 'Present' ? 'Present' : 'Review');
         });
-        
-        setAttendanceState(newState);
-
-      } catch (err) {
-        console.error(err);
+        setDecisions(initial);
+      } catch (err: any) {
+        if (!cancelled) setError(err.message || 'Unable to load attendance.');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
-    loadDemoData();
+    load();
+    return () => { cancelled = true; };
   }, [demoSessionId]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: students.length,
-    present: Object.values(attendanceState).filter(s => s === 'present').length,
-    absent: Object.values(attendanceState).filter(s => s === 'absent').length,
-    exceptions: Object.values(attendanceState).filter(s => s === 'exception').length,
-  };
+    present: Object.values(decisions).filter(value => value === 'Present').length,
+    absent: Object.values(decisions).filter(value => value === 'Absent').length,
+    review: Object.values(decisions).filter(value => value === 'Review').length
+  }), [students.length, decisions]);
 
-  const handleConfirm = async () => {
-    setIsSubmitting(true);
+  const setDecision = (id: string, value: Decision) =>
+    setDecisions(current => ({ ...current, [id]: value }));
+
+  const confirmAttendance = async () => {
+    if (stats.review > 0) return;
+    setSubmitting(true);
+    setError('');
     try {
       const token = localStorage.getItem('token');
-      const payload = {
-        decisions: Object.keys(attendanceState).map(student_id => ({
-          student_id,
-          decision: attendanceState[student_id].toUpperCase()
-        }))
-      };
-      
-      const res = await fetch(`/api/demo/session/${demoSessionId}/confirm`, {
+      const response = await fetch('/api/demo/session/' + demoSessionId + '/confirm', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ decisions: Object.entries(decisions).map(([student_id, decision]) => ({ student_id, decision })) })
       });
-      
-      if (res.ok) {
-        setConfirmed(true);
-        setTimeout(() => {
-          navigate('/teacher');
-        }, 2000);
-      } else {
-        alert('Failed to confirm demo attendance');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error saving');
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to confirm attendance.');
+      setConfirmed(true);
+      window.setTimeout(() => navigate('/teacher'), 1500);
+    } catch (err: any) {
+      setError(err.message || 'Unable to save attendance.');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const updateStatus = (id: string, status: 'present' | 'absent') => {
-    setAttendanceState(prev => ({ ...prev, [id]: status }));
-  };
-
   return (
-    <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+    <div className="max-w-4xl mx-auto space-y-7 pb-20">
       <div>
-        <button 
-          onClick={() => navigate('/teacher')}
-          className="flex items-center gap-2 text-[14px] font-medium text-[#667085] hover:text-[#111827] transition-colors mb-6"
-        >
+        <button onClick={() => navigate('/teacher')} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 mb-5">
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </button>
-        <h1 className="text-[32px] font-semibold text-[#111827] tracking-tight">Review AI Demo Attendance</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Review attendance</h1>
+        <p className="text-sm text-slate-500 mt-2">AI and RFID provide evidence. The teacher makes the final decision.</p>
       </div>
-
-      <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 flex items-center justify-between shadow-sm">
-        <div>
-          <h2 className="text-[20px] font-semibold text-[#111827] mb-1">SEC B</h2>
-          <div className="flex items-center gap-2 text-[14px] text-[#667085]">
-            <span>RDB 6</span>
-            <span className="w-1 h-1 rounded-full bg-[#D1D5DB]" />
-            <span>AI Camera Demo</span>
-          </div>
+      {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
+      {loading ? <div className="flex justify-center p-16"><Loader2 className="w-7 h-7 animate-spin text-blue-600" /></div> : <>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            ['Students', stats.total], ['Present', stats.present],
+            ['Absent', stats.absent], ['Needs decision', stats.review]
+          ].map(([label, value]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="text-xs text-slate-500">{label}</div>
+            <div className="text-2xl font-semibold mt-1 text-slate-900">{value}</div>
+          </div>)}
         </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total', value: stats.total, color: 'text-gray-900', bg: 'bg-gray-50' },
-          { label: 'Present', value: stats.present, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Absent', value: stats.absent, color: 'text-red-600', bg: 'bg-red-50' },
-          { label: 'Needs Review', value: stats.exceptions, color: 'text-amber-600', bg: 'bg-amber-50' },
-        ].map((stat, i) => (
-          <div key={i} className={`${stat.bg} p-4 rounded-2xl border border-transparent`}>
-            <div className="text-[13px] font-medium text-[#667085] mb-1">{stat.label}</div>
-            <div className={`text-[24px] font-semibold ${stat.color}`}>{stat.value}</div>
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200">
+            <h2 className="font-semibold text-slate-900">Student evidence</h2>
+            <p className="text-xs text-slate-500 mt-1">No camera detection is treated as proof of absence.</p>
           </div>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-[#E5E7EB] bg-[#F9FAFB]">
-          <h3 className="text-[14px] font-semibold text-[#111827]">Student Roster</h3>
-        </div>
-        
-        <div className="divide-y divide-[#E5E7EB]">
-          {students.map((student) => {
-            const status = attendanceState[student.id];
-            
-            return (
-              <div key={student.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#F9FAFB] transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#F3F4F6] text-[#4B5563] flex items-center justify-center text-[14px] font-medium border border-[#E5E7EB]">
-                    {student.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="text-[15px] font-medium text-[#111827]">{student.name}</div>
-                    <div className="text-[13px] text-[#667085]">{student.roll_number}</div>
+          <div className="divide-y divide-slate-100">
+            {students.map(student => {
+              const decision = decisions[student.id] || 'Review';
+              return <div key={student.id} className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="font-medium text-slate-900">{student.name}</div>
+                  <div className="text-xs text-slate-500 font-mono mt-0.5">{student.roll_number}</div>
+                  <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{student.evidence}</span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{student.rfid_taps} RFID tap(s)</span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{student.frames_recognized}/{student.valid_frames} face frames</span>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  {status === 'exception' ? (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-xl border border-amber-200">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <span className="text-[13px] font-medium text-amber-700 mr-2">Low Confidence</span>
-                      <button 
-                        onClick={() => updateStatus(student.id, 'present')}
-                        className="px-3 py-1.5 bg-white border border-amber-200 text-emerald-700 text-[13px] font-medium rounded-lg hover:bg-emerald-50 transition-colors"
-                      >
-                        Mark Present
-                      </button>
-                      <button 
-                        onClick={() => updateStatus(student.id, 'absent')}
-                        className="px-3 py-1.5 bg-white border border-amber-200 text-red-700 text-[13px] font-medium rounded-lg hover:bg-red-50 transition-colors"
-                      >
-                        Mark Absent
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex bg-[#F3F4F6] p-1 rounded-xl">
-                      <button
-                        onClick={() => updateStatus(student.id, 'present')}
-                        className={`flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-[10px] transition-all ${
-                          status === 'present' 
-                            ? 'bg-white text-emerald-700 shadow-sm border border-[#E5E7EB]' 
-                            : 'text-[#667085] hover:text-[#111827]'
-                        }`}
-                      >
-                        {status === 'present' && <Check className="w-4 h-4" />}
-                        Present
-                      </button>
-                      <button
-                        onClick={() => updateStatus(student.id, 'absent')}
-                        className={`flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-[10px] transition-all ${
-                          status === 'absent' 
-                            ? 'bg-white text-red-700 shadow-sm border border-[#E5E7EB]' 
-                            : 'text-[#667085] hover:text-[#111827]'
-                        }`}
-                      >
-                        {status === 'absent' && <X className="w-4 h-4" />}
-                        Absent
-                      </button>
-                    </div>
+                <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 self-start lg:self-auto">
+                  {(['Present', 'Absent', 'Review'] as Decision[]).map(value =>
+                    <button key={value} onClick={() => setDecision(student.id, value)}
+                      className={'px-3 py-2 rounded-lg text-xs font-medium transition-colors ' +
+                        (decision === value ? (value === 'Present' ? 'bg-white text-emerald-700 shadow-sm' :
+                        value === 'Absent' ? 'bg-white text-rose-700 shadow-sm' : 'bg-white text-amber-700 shadow-sm') :
+                        'text-slate-500 hover:text-slate-900')}>{value}</button>
                   )}
                 </div>
-              </div>
-            );
-          })}
+              </div>;
+            })}
+            {students.length === 0 && <p className="p-8 text-center text-sm text-slate-500">No students found in this class roster.</p>}
+          </div>
         </div>
-      </div>
-
-      <div className="flex justify-end pt-4">
-        <button
-          onClick={handleConfirm}
-          disabled={stats.exceptions > 0 || isSubmitting || confirmed}
-          className="flex items-center gap-2 px-6 py-3 bg-[#0B65FE] text-white rounded-xl text-[14px] font-medium hover:bg-[#004BCC] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {confirmed ? (
-            <><CheckCircle2 className="w-5 h-5" /> Confirmed Successfully</>
-          ) : (
-            <>{stats.exceptions > 0 ? 'Resolve exceptions first' : 'Confirm Demo Attendance'}</>
-          )}
-        </button>
-      </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-xs text-slate-500 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" /> Resolve every Review item before final confirmation.
+          </div>
+          <button onClick={confirmAttendance} disabled={stats.review > 0 || submitting || confirmed || students.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40">
+            {confirmed ? <><CheckCircle2 className="w-4 h-4" /> Attendance confirmed</> :
+              submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> :
+              <><Check className="w-4 h-4" /> Confirm final attendance</>}
+          </button>
+        </div>
+      </>}
     </div>
   );
 };

@@ -40,6 +40,19 @@ const unsigned long BLE_SCAN_INTERVAL = 10000;
 
 // State tracking
 bool oledReady = false;
+bool rfidEnabled = false;
+
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  if (String(topic) != String(TOPIC_COMMAND)) return;
+  String message;
+  for (unsigned int i = 0; i < length; i++) message += (char)payload[i];
+  JsonDocument command;
+  if (deserializeJson(command, message)) return;
+  if (String(command["command"] | "") != "rfid") return;
+  rfidEnabled = command["enabled"] | false;
+  displayStatus(rfidEnabled ? "RFID: ACTIVE" : "RFID: PAUSED");
+  Serial.println(rfidEnabled ? "RFID reader enabled" : "RFID reader disabled");
+}
 
 void setupOLED() {
   Wire.begin(OLED_SDA, OLED_SCL);
@@ -84,13 +97,17 @@ void reconnectMQTT() {
   while (!mqttClient.connected()) {
     displayStatus("Connecting to MQTT...");
     // Create LWT payload
-    String lwtPayload = "{\"status\":\"offline\",\"reason\":\"lwt\",\"timestamp\":";
+    String lwtPayload = "{"status":"offline","reason":"lwt","timestamp":";
     lwtPayload += String(millis()) + "}";
     
     if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD, TOPIC_STATUS, 1, true, lwtPayload.c_str())) {
       Serial.println("MQTT connected");
+      mqttClient.subscribe(TOPIC_COMMAND, 1);
+      mqttClient.setCallback(mqttCallback);
+      // Start paused; teacher explicitly enables the reader when class begins.
+      rfidEnabled = false;
       // Send online status
-      String onlinePayload = "{\"status\":\"online\",\"timestamp\":";
+      String onlinePayload = "{"status":"online","timestamp":";
       onlinePayload += String(millis()) + "}";
       mqttClient.publish(TOPIC_STATUS, onlinePayload.c_str(), true);
       
@@ -180,7 +197,7 @@ void loop() {
   }
 
   // RFID Poll
-  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+  if (rfidEnabled && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
     String uid = "";
     for (byte i = 0; i < mfrc522.uid.size; i++) {
       uid += String(mfrc522.uid.uidByte[i] < 0x10 ? "0" : "");

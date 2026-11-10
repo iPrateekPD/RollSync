@@ -1,248 +1,233 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle2, Loader2, ShieldCheck, Wifi } from 'lucide-react';
+
+type CameraStatus = 'loading' | 'ready' | 'starting' | 'capturing' | 'uploading' | 'waiting' | 'completed' | 'error';
+
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const CAMERA_API = (import.meta.env.VITE_CAMERA_API_URL || '').replace(/\/$/, '');
+const TOTAL_FRAMES = 5;
+const sleep = (ms: number) => new Promise(resolve => window.setTimeout(resolve, Math.max(0, ms)));
 
 export const DemoCamera = () => {
   const { token } = useParams<{ token: string }>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  const [session, setSession] = useState<any>(null);
-  const [status, setStatus] = useState<'initializing' | 'ready' | 'counting' | 'processing' | 'waiting' | 'error' | 'completed'>('initializing');
-  const [countdown, setCountdown] = useState(3);
-  const [waitTimer, setWaitTimer] = useState(10);
-  const [message, setMessage] = useState('Initializing camera...');
-  const [frameIndex, setFrameIndex] = useState(0);
-  const TOTAL_FRAMES = 5;
+  const streamRef = useRef<MediaStream | null>(null);
+  const stoppedRef = useRef(false);
 
-  // Load session
+  const [session, setSession] = useState<any>(null);
+  const [status, setStatus] = useState<CameraStatus>('loading');
+  const [message, setMessage] = useState('Checking your camera link…');
+  const [frameIndex, setFrameIndex] = useState(0);
+  const [error, setError] = useState('');
+
+  const stopCamera = useCallback(() => {
+    stoppedRef.current = true;
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
+  }, []);
+
   useEffect(() => {
+    let cancelled = false;
     const loadSession = async () => {
       try {
-        const res = await fetch(`/api/demo/session/${token}`);
-        if (res.ok) {
-          const data = await res.json();
+        const response = await fetch(`${API_BASE}/demo/session/${token}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'This camera link is invalid or unavailable.');
+        if (!cancelled) {
           setSession(data);
-        } else {
-          setStatus('error');
-          setMessage('Invalid demo link');
-        }
-      } catch (err) {
-        setStatus('error');
-        setMessage('Network error');
-      }
-    };
-    loadSession();
-  }, [token]);
-
-  useEffect(() => {
-    if (!session || status === 'error') return;
-
-    // Start camera stream
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment' },
-          audio: false
-        });
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
           setStatus('ready');
-          setMessage('Camera Ready');
-          
-          setTimeout(() => {
-            setStatus('counting');
-          }, 2000);
+          setMessage('Your camera link is ready.');
         }
-      } catch (err) {
-        setStatus('error');
-        setMessage('Camera permission denied or unavailable.');
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err.message || 'Unable to verify this camera link.');
+          setStatus('error');
+        }
       }
     };
+    if (token) loadSession();
+    return () => { cancelled = true; stopCamera(); };
+  }, [token, stopCamera]);
 
-    startCamera();
+  useEffect(() => () => stopCamera(), [stopCamera]);
 
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
-      }
-    };
-  }, [session]);
-
-  useEffect(() => {
-    let timer: any;
-    if (status === 'counting') {
-      if (countdown > 0) {
-        timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-      } else {
-        captureAndUpload();
-      }
-    }
-    return () => clearTimeout(timer);
-  }, [status, countdown]);
-
-  useEffect(() => {
-    let timer: any;
-    if (status === 'waiting') {
-      if (waitTimer > 0) {
-        timer = setTimeout(() => setWaitTimer(c => c - 1), 1000);
-      } else {
-        setCountdown(3);
-        setStatus('counting');
-      }
-    }
-    return () => clearTimeout(timer);
-  }, [status, waitTimer]);
-
-  const captureAndUpload = async () => {
-    if (!videoRef.current || !canvasRef.current || !session) return;
-    
-    setStatus('processing');
-    setMessage(`Processing Frame ${frameIndex + 1}/${TOTAL_FRAMES}...`);
-
+  const uploadFrame = async (captureNumber: number) => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      
-      const formData = new FormData();
-      formData.append('file', blob, 'capture.jpg');
-      
-      try {
-        // Post to FastAPI camera backend
-        const API_BASE = import.meta.env.VITE_CAMERA_API_URL || 'http://localhost:8000';
-        const res = await fetch(`${API_BASE}/api/camera/demo/session/${token}/frame?capture_number=${frameIndex + 1}`, {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!res.ok) {
-          console.error("Frame capture failed");
-        }
-        
-        if (frameIndex + 1 < TOTAL_FRAMES) {
-          setFrameIndex(prev => prev + 1);
-          setWaitTimer(10);
-          setStatus('waiting');
-        } else {
-          finalizeSession();
-        }
-      } catch (err) {
-        setStatus('error');
-        setMessage('Network error connecting to camera server.');
-      }
-      
-    }, 'image/jpeg', 0.8);
+    if (!video || !canvas || !CAMERA_API) {
+      throw new Error('Camera AI service is not configured yet. Please contact the teacher.');
+    }
+    if (!video.videoWidth || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      throw new Error('Camera is not ready. Please wait a moment and try again.');
+    }
+
+    canvas.width = Math.min(video.videoWidth, 1280);
+    canvas.height = Math.round(canvas.width * video.videoHeight / video.videoWidth);
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Unable to prepare the camera frame.');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(value => value ? resolve(value) : reject(new Error('Could not capture image.')), 'image/jpeg', 0.78);
+    });
+    const form = new FormData();
+    form.append('file', blob, `rollsync-frame-${captureNumber}.jpg`);
+
+    const response = await fetch(`${CAMERA_API}/api/camera/demo/session/${token}/frame?capture_number=${captureNumber}`, {
+      method: 'POST',
+      body: form
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || data.error || 'Frame upload failed.');
+    return data;
   };
 
-  const finalizeSession = async () => {
-    setMessage('Finalizing Session...');
-    
-    try {
-      // Complete via Node backend
-      const res = await fetch(`/api/demo/session/${session.id}/complete`, {
-        method: 'POST'
-      });
-      
-      if (res.ok) {
-        setStatus('completed');
-        setMessage('Processing Complete');
-      } else {
-        setStatus('error');
-        setMessage('Error finalizing session.');
-      }
-    } catch (err) {
+  const startCapture = async () => {
+    if (!session || !token) return;
+    if (!CAMERA_API) {
+      setError('The AI camera service URL has not been configured on the RollSync frontend yet.');
       setStatus('error');
-      setMessage('Failed to complete session.');
+      return;
+    }
+
+    try {
+      setStatus('starting');
+      setMessage('Starting your camera…');
+
+      const sessionResponse = await fetch(`${API_BASE}/demo/session/${token}`);
+      const liveSession = await sessionResponse.json().catch(() => ({}));
+      if (!sessionResponse.ok || liveSession.status !== 'in_progress' || !liveSession.started_at) {
+        throw new Error('The teacher must start the class before camera capture can begin.');
+      }
+      setSession(liveSession);
+
+      const media = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      streamRef.current = media;
+      if (videoRef.current) {
+        videoRef.current.srcObject = media;
+        await videoRef.current.play();
+      }
+      stoppedRef.current = false;
+
+      const classEndsAt = new Date(liveSession.ended_at).getTime();
+      const captureStartedAt = Date.now();
+      const remainingDurationMs = classEndsAt - captureStartedAt;
+      if (remainingDurationMs <= 0) throw new Error('The selected class duration has already ended.');
+
+      // Five captures are evenly distributed across the remaining selected class duration.
+      // The first is captured immediately; the remaining four use the same interval.
+      const captureIntervalMs = remainingDurationMs / TOTAL_FRAMES;
+      setStatus('waiting');
+      setMessage(`Camera connected. Five frames will be captured at equal intervals across the remaining class time.`);
+
+      for (let frame = 1; frame <= TOTAL_FRAMES; frame += 1) {
+        if (stoppedRef.current) return;
+        const scheduledAt = captureStartedAt + (frame - 1) * captureIntervalMs;
+        await sleep(Math.max(0, scheduledAt - Date.now()));
+        if (stoppedRef.current) return;
+        if (Date.now() >= classEndsAt) break;
+
+        setFrameIndex(frame - 1);
+        setStatus('capturing');
+        setMessage(`Capturing frame ${frame} of ${TOTAL_FRAMES}…`);
+        await uploadFrame(frame);
+        setFrameIndex(frame);
+        if (frame < TOTAL_FRAMES) {
+          setStatus('waiting');
+          const nextCaptureInSeconds = Math.max(1, Math.round((scheduledAt + captureIntervalMs - Date.now()) / 1000));
+          setMessage(`Frame ${frame} received. Next frame in approximately ${nextCaptureInSeconds} seconds.`);
+        }
+      }
+
+      setStatus('waiting');
+      setMessage('All five capture slots have been processed. Waiting for the selected class duration to finish…');
+      await sleep(Math.max(0, classEndsAt - Date.now()));
+      if (stoppedRef.current) return;
+      const completeResponse = await fetch(`${API_BASE}/demo/session/${token}/complete`, { method: 'POST' });
+      const completeData = await completeResponse.json().catch(() => ({}));
+      if (!completeResponse.ok) throw new Error(completeData.error || 'Could not finish the camera session.');
+
+      setStatus('completed');
+      setMessage('Class ended and the five-frame capture window is complete. You can close this page.');
+      stopCamera();
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong while using the camera.');
+      setStatus('error');
+      stopCamera();
     }
   };
 
-  if (status === 'error') {
-    return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-6 text-white">
-        <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
-        <h1 className="text-xl font-bold mb-2">Camera Error</h1>
-        <p className="text-gray-400 text-center">{message}</p>
-      </div>
-    );
-  }
-
-  if (status === 'completed') {
-    return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-6 text-white">
-        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle2 className="w-10 h-10 text-green-500" />
-        </div>
-        <h1 className="text-2xl font-bold mb-2">Demo Complete</h1>
-        <p className="text-gray-400 text-center mb-8">
-          The teacher has been notified on their dashboard. You may close this page.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black flex flex-col relative overflow-hidden font-sans">
-      <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent z-10 flex justify-between items-start">
-        <div>
-          <div className="text-white font-bold text-lg">AI Demo Camera</div>
-          <div className="text-white/70 text-sm font-medium">Session: SEC B • RDB 6</div>
+    <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+      <section className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl">
+        <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <p className="text-lg font-semibold tracking-tight">RollSync Camera</p>
+            <p className="text-xs text-slate-400">Single-camera classroom demo</p>
+          </div>
+          <span className="rounded-full bg-blue-400/10 px-3 py-1 text-xs font-medium text-blue-300">Camera device</span>
+        </header>
+
+        <div className="relative aspect-[4/3] bg-black">
+          <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+          <canvas ref={canvasRef} className="hidden" />
+          {status === 'loading' || status === 'starting' || status === 'uploading' ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/80 text-center">
+              <Loader2 className="h-9 w-9 animate-spin text-blue-400" />
+              <p className="px-6 text-sm text-slate-200">{message}</p>
+            </div>
+          ) : null}
+          {status === 'capturing' ? (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-sm font-semibold">
+              Capture {Math.min(frameIndex + 1, TOTAL_FRAMES)} / {TOTAL_FRAMES}
+            </div>
+          ) : null}
+          {status === 'completed' ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-emerald-950/90">
+              <CheckCircle2 className="h-14 w-14 text-emerald-400" />
+              <p className="text-xl font-semibold">Camera session complete</p>
+            </div>
+          ) : null}
+          {status === 'error' ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/95 p-6 text-center">
+              <AlertCircle className="h-12 w-12 text-rose-400" />
+              <p className="font-semibold">Unable to continue</p>
+              <p className="text-sm text-slate-300">{error}</p>
+            </div>
+          ) : null}
         </div>
-        <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-white text-xs font-bold uppercase tracking-wider">
-            {frameIndex}/{TOTAL_FRAMES}
-          </span>
+
+        <div className="space-y-4 p-5">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Wifi className="h-4 w-4" />
+            <span>{session?.classroom || 'Classroom'} · {session?.section || 'Attendance session'}</span>
+          </div>
+
+          {status === 'ready' ? (
+            <>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+                <div className="mb-2 flex items-center gap-2 font-medium text-white"><ShieldCheck className="h-4 w-4 text-emerald-400" /> Before you start</div>
+                Keep this phone plugged in if possible, allow camera access, and point the rear camera towards the classroom. The camera preview does not upload anything. After the teacher starts the class, tap below to begin capture. Five frames are captured at equal intervals across the remaining selected class duration.
+              </div>
+              <button onClick={startCapture} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold hover:bg-blue-500">
+                <Camera className="h-5 w-5" /> Enable camera and start capture
+              </button>
+            </>
+          ) : null}
+
+          {status === 'capturing' || status === 'waiting' || status === 'uploading' ? (
+            <div className="rounded-xl bg-blue-400/10 p-3 text-sm text-blue-200">{message}</div>
+          ) : null}
+          {status === 'completed' ? <p className="text-center text-sm text-emerald-300">{message}</p> : null}
+          {status === 'error' ? <button onClick={() => window.location.reload()} className="w-full rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15">Reload camera link</button> : null}
+          <p className="text-center text-[11px] leading-relaxed text-slate-500">Camera access starts only after you tap the button. The class itself is started separately by the teacher. Keep this page open until the class timer ends.</p>
         </div>
-      </div>
-
-      <div className="flex-1 relative w-full h-full max-w-2xl mx-auto flex items-center justify-center bg-gray-900">
-        <video 
-          ref={videoRef}
-          autoPlay 
-          playsInline 
-          muted
-          className="w-full h-full object-cover"
-        />
-        <canvas ref={canvasRef} className="hidden" />
-
-        {/* Overlays */}
-        {status === 'counting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-20">
-            <div className="text-[120px] font-bold text-white tracking-tighter drop-shadow-2xl animate-pulse">
-              {countdown}
-            </div>
-          </div>
-        )}
-
-        {(status === 'processing' || status === 'initializing' || status === 'ready') && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-20 transition-all duration-300">
-            <div className="bg-white/10 p-6 rounded-2xl backdrop-blur-md border border-white/20 flex flex-col items-center">
-              <Loader2 className="w-10 h-10 text-white animate-spin mb-4" />
-              <p className="text-white font-medium text-lg">{message}</p>
-            </div>
-          </div>
-        )}
-
-        {status === 'waiting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
-            <div className="text-center">
-              <div className="text-white text-xl font-medium mb-2">Next capture in</div>
-              <div className="text-6xl font-bold text-white font-mono">{waitTimer}s</div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
