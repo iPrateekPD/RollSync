@@ -38,8 +38,12 @@ app.use('/api', apiRouter);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('[SERVER] Unhandled error:', err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
+  console.error('[SERVER] Request error:', err.message || err);
+  const statusCode = Number.isInteger(err.statusCode) ? err.statusCode : 500;
+  res.status(statusCode).json({
+    error: err.message || 'Internal Server Error',
+    code: err.code || 'INTERNAL_SERVER_ERROR',
+  });
 });
 
 export default app;
